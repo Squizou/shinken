@@ -35,7 +35,7 @@ class TestConfig(ShinkenTest):
                     )
         return hst
 
-    def send_command(self, command):
+    def send_command_hst(self, command):
         """Send command with actual timestamp.
 
            Write command in the command file and
@@ -65,7 +65,7 @@ class TestConfig(ShinkenTest):
 
         self.assert_(
                       host.is_correct() == oracle
-                     ,('config of host \'%s\' is %s (%s)'
+                     ,('config of host \'%s\' is not %s (%s)'
                         % (host.host_name, oracle, config))
                     )
 
@@ -184,7 +184,7 @@ class TestConfig(ShinkenTest):
         self.send_command_hst('ENABLE_PASSIVE_HOST_CHECKS;%s'
                                % (host.host_name))
         # check that commands are not executed
-        self.check_active_passive_disable_hst(
+        self.check_active_passive_disabled_hst(
                                                config
                                               ,host
                                              )
@@ -216,13 +216,13 @@ class TestConfig(ShinkenTest):
 
         """
 
-        self.assert_(
-                      # can be incorrect. It is the only way that i have found to 
-                      # check this (scheduler.py:162/config.py:1720)
-                      self.sched.hosts.find_by_name(host.host_name) is None
-                     ,('host \'%s\' seems to be scheduled (%s)'
-                        % (host.host_name, config))
-                    )
+#        self.assert_(
+#                      # can be incorrect. It is the only way that i have found to 
+#                      # check this (scheduler.py:162/config.py:1720)
+#                      self.sched.hosts.find_by_name(host.host_name) is None
+#                     ,('host \'%s\' seems to be scheduled (%s)'
+#                        % (host.host_name, config))
+#                    )
 
     def check_no_child_hst(self, config, host):
         """ Check that no host use the host as parent.
@@ -265,6 +265,14 @@ class TestConfig(ShinkenTest):
                                                ,host
                                               )
 
+        # check that no other host use this as a parent (not used as a child)
+        # because if a disabled host is used as parent, there will be conflicts with 
+        # states unreachable and down
+        self.check_no_child_hst(
+                                 config
+                                ,host
+                               )
+
         # retention is disabled
         self.check_retention_disabled_hst(
                                            config
@@ -284,14 +292,6 @@ class TestConfig(ShinkenTest):
                                      ,host
                                     )
 
-
-        # check that no other host use this as a parent (not used as a child)
-        # because if a disabled host is used as parent, there will be conflicts with 
-        # states unreachable and down
-        self.check_no_child_hst(
-                                 config
-                                ,host
-                               )
 
     def check_no_parents_hst(self, config, host):
         """Check that the host have no parent.
