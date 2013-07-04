@@ -697,7 +697,7 @@ class TestConfig(ShinkenTest):
           (
             [
              (
-               'UNNAMEDHOST' #! TODO: put real host_name
+               'host_with_no_name_1'
               ,False
              )
              # check if host is correct can be impossible because it 
@@ -708,7 +708,7 @@ class TestConfig(ShinkenTest):
             ]
            ,[
               '[host::UNNAMEDHOST] host_name property not set'
-             ,'[host::UNNAMEDHOST] alias property not set'
+#             ,'[host::host_with_no_name_1] alias property not set'
             ]
           )
 
@@ -717,7 +717,7 @@ class TestConfig(ShinkenTest):
           (
             [
              (
-               'UNNAMEDHOST' #! TODO: put real host_name
+               'host_with_no_name_1'
               ,False
              )
             ]
@@ -730,11 +730,11 @@ class TestConfig(ShinkenTest):
           (
             [
               (
-                'UNNAMEDHOST' #! TODO: put real host_name
+                'host_with_no_name_1'
                ,False
               )
              ,(
-                'UNNAMEDHOST' #! TODO: put real host_name
+                'host_with_no_name_2'
                ,False
               )
             ]

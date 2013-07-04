@@ -68,6 +68,7 @@ class Host(SchedulingItem):
         # To allow disabling
         'is_disabled': BoolProp(default=False, editable_when_object_disabled=False),
         'conf_is_correct': BoolProp(default=True, editable_when_object_disabled=False),
+        'conf_is_correct_override': BoolProp(default=False, editable_when_object_disabled=False),
 
         'host_name':            StringProp(fill_brok=['full_status', 'check_result', 'next_schedule']),
         'alias':                StringProp(fill_brok=['full_status']),
@@ -417,7 +418,7 @@ class Host(SchedulingItem):
     # Disable a host
     def disable(self):
         # We save if the host was correct or not
-        self.conf_is_correct = False # in this first case, we disable only invalid hosts
+        self.override_is_correct(False) # in this first case, we disable only invalid hosts
 
         # Set status to HARD/DOWN
         self.set_state_from_exit_status(3)
@@ -428,7 +429,7 @@ class Host(SchedulingItem):
         # Set an error message
         self.output = 'Configuration error'
 
-        # Set check_interval to 0 in order to not schedule host
+        # Set check_interval to 0 in order not to schedule host
         self.check_interval = 0
 
         # Disable active and passive checks
@@ -454,12 +455,18 @@ class Host(SchedulingItem):
 
         logger.info("%s: I am disabled." % (self.get_name()))
 
+    # Override is_correct in order not to change the return of
+    # is_correct() function when host is disabled
+    def override_is_correct(self, correct):
+        self.conf_is_correct_override = True
+        self.conf_is_correct = correct
+
     # Check is required prop are set:
     # contacts OR contactgroups is need
     def is_correct(self):
 
-        # if the host is disabled, we return the previous value, before disabling
-        if self.is_disabled:
+        # if the configuration is override, we return this value
+        if self.conf_is_correct_override:
             return self.conf_is_correct
 
         state = True
@@ -1244,7 +1251,6 @@ class Hosts(Items):
                      host_in_loops[0].unregister_parent(h)
                      h.unregister_child(host_in_loops[0])
 
-
             # Recheck if there is still a loop
             host_in_loops = self.no_loop_in_parents(True)
 
@@ -1303,10 +1309,39 @@ class Hosts(Items):
         for h in self:
             h.create_business_rules_dependencies()
 
+    # Set a default host_name to the host
+    def create_default_host_name(self, host):
+        name_pattern = 'host_with_no_name_'
+        num = 1
+
+        # We raise an error
+        logger.error("[host::%s] host_name property not set" % (host.get_name()))
+
+        # We build a list of host_names
+        list_host_names = []
+        for h in self:
+            if hasattr(h, 'host_name') and h.host_name is not None:
+                list_host_names.append(h.host_name)
+
+        # We search a free name
+        while (name_pattern+str(num)) in list_host_names:
+            num = num + 1
+
+        # We set the host_name
+        logger.info("Set host_name '%s' to '%s'" % ((name_pattern+str(num)), host.get_name()) )
+        host.host_name = (name_pattern+str(num))
+
+        # We save that the configuration of host is invalid
+        host.override_is_correct(False)
+
     # Fix configuration errors in order to avoid "I am bail out"
     def fix_conf_errors(self):
-        # Will disable hosts with an invalid configuration
         for h in self:
+            # Will set a name to hosts with no host_name
+            if not hasattr(h, 'host_name'):
+                self.create_default_host_name(h)
+
+            # Will disable hosts with an invalid configuration
             if not h.is_correct():
                 logger.info("%s: My configuration is invalid. I will be disabled" % (h.get_name()))
                 h.disable()
