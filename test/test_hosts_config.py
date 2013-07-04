@@ -841,7 +841,6 @@ class TestConfig(ShinkenTest):
           )
         })
 
-    # if event_handler is invalid
     def test_event_handler(self):
         """Test of host with an invalid event handler.
 
@@ -881,6 +880,26 @@ class TestConfig(ShinkenTest):
              )
             ]
            ,['[item::commande] command_line property is missing']
+          )
+        })
+
+    def test_illegal_objects_name_chars(self):
+        """Test an host with an illegal host_name
+
+           The host shouldn't be disabled but its name must be changed
+
+       """
+        self.check_config({
+         # a host with a host_name which uses illegal chars
+          'nagios_illegal_objects_name_chars_1.cfg' :
+          (
+            [
+             (
+               '_name_._of_.the__host__'
+              ,True
+             )
+            ]
+           ,['<name>.~of~.the&"host"!: My host_name got characters']
           )
         })
 
