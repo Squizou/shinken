@@ -209,7 +209,7 @@ def to_list_of_names(ref, tab):
 # This will give a string if the value exists
 # or '' if not
 def to_name_if_possible(ref, value):
-    if value:
+    if value and hasattr(value, 'get_name'):
         return value.get_name()
     return ''
 

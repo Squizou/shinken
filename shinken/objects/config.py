@@ -929,8 +929,8 @@ class Config(Item):
 
     # Disable elements with an invalid configuration
     # Only hosts are concerned
-    def disable_invalid_objects(self):
-        self.hosts.disable()
+    def fix_conf_errors(self):
+        self.hosts.fix_conf_errors()
 
     # Dependencies are important for scheduling
     # This function create dependencies linked between elements.

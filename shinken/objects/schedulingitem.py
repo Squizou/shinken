@@ -503,6 +503,10 @@ class SchedulingItem(Item):
         if (not self.active_checks_enabled or not cls.execute_checks) and not force:
             return None
 
+        # we don't schedule a disabled host, even if force=True
+        if cls.my_type == 'host' and self.is_disabled:
+            return None
+
         now = time.time()
 
         # If check_interval is 0, we should not add it for a service

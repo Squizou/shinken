@@ -158,7 +158,7 @@ class ShinkenTest(unittest.TestCase):
         self.conf.create_business_rules()
         self.conf.create_business_rules_dependencies()
         # we disable invalid objects
-        self.conf.disable_invalid_objects()
+        self.conf.fix_conf_errors()
         self.conf.is_correct()
         if not self.conf.conf_is_correct:
             print "The conf is not correct, I stop here"

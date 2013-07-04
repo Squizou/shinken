@@ -1185,8 +1185,9 @@ class Hosts(Items):
 
 
     # Parent graph: use to find quickly relations between all host, and loop
-    # return True if there is a loop
-    def no_loop_in_parents(self):
+    # return True if there is a loop. If return_hosts=True, return a list
+    # of hosts in a loop instead.
+    def no_loop_in_parents(self, return_hosts=False):
         # Ok, we say "from now, no loop :) "
         r = True
 
@@ -1207,12 +1208,46 @@ class Hosts(Items):
         # Now get the list of all hosts in a loop
         host_in_loops = parents.loop_check()
 
+        # if we must return list of hosts instead raise errors
+        if return_hosts:
+            return host_in_loops
+
         # and raise errors about it
         for h in host_in_loops:
             logger.error("The host '%s' is part of a circular parent/child chain!" % h.get_name())
             r = False
 
         return r
+
+
+    # Remove loop by remove parents of hosts in a loop
+    def remove_loop_in_parents(self):
+
+        # Get hosts which are in a loop
+        host_in_loops = self.no_loop_in_parents(True)
+
+        # Raise error if loops
+        for h in host_in_loops:
+            logger.error("The host '%s' is part of a circular parent/child chain!" % h.get_name())
+
+        # While there is a loop
+        while 0 != len(host_in_loops):
+            logger.info("loop")
+            for h in host_in_loops:
+                logger.info(h.get_name())
+
+            # Will remove parents of the firt host in the loop
+            # We remove only parents which are in the loop
+            for h in host_in_loops:
+                if h in host_in_loops[0].parents:
+                     # Remove parent
+                     host_in_loops[0].unregister_parent(h)
+                     h.unregister_child(host_in_loops[0])
+
+
+            # Recheck if there is still a loop
+            host_in_loops = self.no_loop_in_parents(True)
+
 
     # Return a list of the host_name of the hosts
     # that got the template with name=tpl_name or inherit from
@@ -1268,9 +1303,13 @@ class Hosts(Items):
         for h in self:
             h.create_business_rules_dependencies()
 
-    # Will disable hosts with an invalid configuration
-    def disable(self):
+    # Fix configuration errors in order to avoid "I am bail out"
+    def fix_conf_errors(self):
+        # Will disable hosts with an invalid configuration
         for h in self:
             if not h.is_correct():
                 logger.info("%s: My configuration is invalid. I will be disabled" % (h.get_name()))
                 h.disable()
+
+        # Will remove parents of hosts in loop to delete it
+        self.remove_loop_in_parents()

@@ -788,8 +788,7 @@ class Items(object):
                 logger.error("[items] In %s is incorrect ; from %s" % (i.get_name(), n))
 
                 # if it not is a disabled host, global configuration is changed to false
-                import shinken.objects.host
-                if not (isinstance(self, shinken.objects.host.Hosts) and i.is_disabled):
+                if not (i.__class__.my_type == 'host' and i.is_disabled):
                     r = False
 
         return r

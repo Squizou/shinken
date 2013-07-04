@@ -15,7 +15,7 @@ CHECK_LOGS = 1
 
 HOST_NOT_DISABLED = 0
 HOST_DISABLED = 1
-HOST_NO_PARENTS = 2
+HOST_NOT_IN_LOOP = 2
 
 
 class TestConfig(ShinkenTest):
@@ -293,17 +293,16 @@ class TestConfig(ShinkenTest):
                                     )
 
 
-    def check_no_parents_hst(self, config, host):
-        """Check that the host have no parent.
+    def check_no_loop_hst(self, config, host):
+        """Check that the host is not in a loop
 
-           Raise an error if the host has at least 1 parent.
+           Raise an error if the host is in a loop
 
         """
-
         self.assert_(
-                      0 == len(host.parents)
-                     ,('host \'%s\' has %s parents (%s)'
-                        % (host.host_name, len(host.parents), config))
+                      host not in self.conf.hosts.no_loop_in_parents(True)
+                     ,('host \'%s\' is in a loop (%s)'
+                        % (host.host_name, config))
                     )
 
     def check_log(self, config, stream, pattern):
@@ -369,7 +368,7 @@ class TestConfig(ShinkenTest):
                 # hst[0] -> host_name
                 # hst[1] -> value expected for is_correct
                 # hst[2] -> true if the host must be disabled, 
-                #           no_parents if the host must have no parents 
+                #           no_loop if the host mustn't be in a loop
 
                 host = self.get_hst(
                                      config
@@ -393,8 +392,8 @@ class TestConfig(ShinkenTest):
                                                 ,host
                                                )
 
-                    elif(HOST_NO_PARENTS == hst[HOST_MUST_BE_DISABLED]):
-                        self.check_no_parents_hst(
+                    elif(HOST_NOT_IN_LOOP == hst[HOST_MUST_BE_DISABLED]):
+                        self.check_no_loop_hst(
                                                    config
                                                   ,host
                                                  )
@@ -430,8 +429,8 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,False
-              ,HOST_NO_PARENTS
+              ,True
+              ,HOST_NOT_IN_LOOP
              )
             ]
            ,['The host \'test_host_0\' is part of a circular parent/child chain!'] 
@@ -443,13 +442,13 @@ class TestConfig(ShinkenTest):
             [
               (
                 'test_host_0'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_1'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_2'
@@ -459,7 +458,6 @@ class TestConfig(ShinkenTest):
            ,[
               'The host \'test_host_0\' is part of a circular parent/child chain!'
              ,'The host \'test_host_1\' is part of a circular parent/child chain!'
-             ,'Hosts: detected loop in parents ; conf incorrect'
             ]
           )
 
@@ -469,28 +467,28 @@ class TestConfig(ShinkenTest):
             [
               (
                 'test_host_0'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_1'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_2'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_3'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_4'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
             ]
            ,[
@@ -498,7 +496,6 @@ class TestConfig(ShinkenTest):
              ,'The host \'test_host_2\' is part of a circular parent/child chain!'
              ,'The host \'test_host_3\' is part of a circular parent/child chain!'
              ,'The host \'test_host_4\' is part of a circular parent/child chain!'
-             ,'Hosts: detected loop in parents ; conf incorrect'
             ] 
           )
 
@@ -508,23 +505,23 @@ class TestConfig(ShinkenTest):
             [
               (
                 'test_host_0'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_1'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_2'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_3'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_4'
@@ -536,7 +533,6 @@ class TestConfig(ShinkenTest):
              ,'The host \'test_host_1\' is part of a circular parent/child chain!'
              ,'The host \'test_host_2\' is part of a circular parent/child chain!'
              ,'The host \'test_host_3\' is part of a circular parent/child chain!'
-             ,'Hosts: detected loop in parents ; conf incorrect'
             ]
           )
 
@@ -546,28 +542,28 @@ class TestConfig(ShinkenTest):
             [
               (
                 'test_host_0'
-               ,False
-               ,HOST_NO_PARENTS 
+               ,True
+               ,HOST_NOT_IN_LOOP
               ) 
              ,(
                 'test_host_1'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_2'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_3'
-               ,False
-               ,HOST_NO_PARENTS 
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_4'
-               ,False
-               ,HOST_NO_PARENTS
+               ,True
+               ,HOST_NOT_IN_LOOP
               )
             ]
            ,[
@@ -576,7 +572,6 @@ class TestConfig(ShinkenTest):
              ,'The host \'test_host_2\' is part of a circular parent/child chain!'
              ,'The host \'test_host_3\' is part of a circular parent/child chain!'
              ,'The host \'test_host_4\' is part of a circular parent/child chain!'
-             ,'Hosts: detected loop in parents ; conf incorrect'
             ]
           )
         })
