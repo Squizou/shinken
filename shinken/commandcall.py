@@ -70,7 +70,7 @@ class CommandCall(DummyCommandCall):
         self.get_command_and_args()
         self.command = commands.find_by_name(self.command.strip())
         self.late_relink_done = False  # To do not relink again and again the same commandcall
-        if self.command is not None:
+        if self.command is not None and self.command.is_correct():
             self.valid = True
         else:
             self.valid = False

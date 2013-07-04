@@ -80,7 +80,7 @@ class Command(Item):
         if not hasattr(self, 'module_type'):
             # If the command start with a _, set the module_type
             # as the name of the command, without the _
-            if getattr(self, 'command_line', '').startswith('_'):
+            if hasattr(self, 'command_line') and getattr(self, 'command_line', '').startswith('_'):
                 module_type = getattr(self, 'command_line', '').split(' ')[0]
                 # and we remove the first _
                 self.module_type = module_type[1:]
