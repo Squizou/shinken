@@ -589,8 +589,14 @@ class TestConfig(ShinkenTest):
           'nagios_remove_twins_1.cfg' :
           (
             [
-             # check if each host is correct can be impossible because
-             # there is not an unique name per host
+              (
+               'test_host_0'
+               ,True
+              )
+             ,(
+               'test_host_0_1'
+               ,True
+              )
             ]
            ,['host.test_host_0 is duplicated from etc/hosts_config/host_remove_twins_1/hosts.cfg']
           )
@@ -598,8 +604,39 @@ class TestConfig(ShinkenTest):
          # a valid host and an invalid host with the same name
          ,'nagios_remove_twins_2.cfg' :
           (
-            []
+            [
+              (
+               'test_host_0'
+               ,False
+              )
+             ,(
+               'test_host_0_1'
+               ,True
+              )
+            ]
            ,['host.test_host_0 is duplicated from etc/hosts_config/host_remove_twins_2/hosts.cfg']
+          )
+         # an invalid host which has the name that will be requested for a valid 
+         # host without an unique hostname. The valid host mustn't take the name of 
+         # the invalid host
+         ,'nagios_remove_twins_3.cfg' :
+          (
+            [
+              (
+               'test_host_0'
+               ,True
+              )
+             ,(
+               'test_host_0_1'
+               ,False
+               ,HOST_MUST_BE_DISABLED
+              )
+             ,(
+               'test_host_0_2'
+               ,True
+              )
+            ]
+           ,['host.test_host_0 is duplicated from etc/hosts_config/host_remove_twins_3/hosts.cfg']
           )
         })
 
@@ -672,7 +709,7 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,True
+              ,False # the is_correct already return false when the error is in a used object
               ,HOST_DISABLED
              )
             ]
@@ -698,18 +735,10 @@ class TestConfig(ShinkenTest):
             [
              (
                'host_with_no_name_1'
-              ,False
+              ,True
              )
-             # check if host is correct can be impossible because it 
-             # doesn't have name
-
-             # TODO when we will choose the default name, we will able 
-             # to access to the host with it
             ]
-           ,[
-              '[host::UNNAMEDHOST] host_name property not set'
-#             ,'[host::host_with_no_name_1] alias property not set'
-            ]
+           ,['[host::UNNAMEDHOST] host_name property not set']
           )
 
          # a host without host_name but with an alias
@@ -718,7 +747,7 @@ class TestConfig(ShinkenTest):
             [
              (
                'host_with_no_name_1'
-              ,False
+              ,True
              )
             ]
            ,['host::UNNAMEDHOST] host_name property not set']
@@ -731,11 +760,11 @@ class TestConfig(ShinkenTest):
             [
               (
                 'host_with_no_name_1'
-               ,False
+               ,True
               )
              ,(
                 'host_with_no_name_2'
-               ,False
+               ,True
               )
             ]
            ,['host::UNNAMEDHOST] host_name property not set']
@@ -847,7 +876,7 @@ class TestConfig(ShinkenTest):
             [
              (
                 'test_host_0'
-               ,True
+               ,False # the is_correct already return false when the error is in a used object
                ,HOST_DISABLED 
              )
             ]
@@ -870,7 +899,7 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,False
+              ,True
               ,HOST_DISABLED
              )
             ]
