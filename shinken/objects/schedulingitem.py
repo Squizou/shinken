@@ -93,6 +93,11 @@ class SchedulingItem(Item):
         # and us to its parents
         son.parent_dependencies.add(self)
 
+    # Unregister the son in my child_dependencies, and
+    # myself in its parent_depedencies
+    def unregister_son_in_parent_child_dependencies(self, son):
+        son.parent_dependencies.remove(self)
+        self.child_dependencies.remove(son)
 
     # Add a flapping change, but no more than 20 states
     # Then update the self.is_flapping bool by calling update_flapping

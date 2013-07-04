@@ -927,6 +927,10 @@ class Config(Item):
         #self.contacts.remove_twins()
         #self.timeperiods.remove_twins()
 
+    # Disable elements with an invalid configuration
+    # Only hosts are concerned
+    def disable_invalid_objects(self):
+        self.hosts.disable()
 
     # Dependencies are important for scheduling
     # This function create dependencies linked between elements.

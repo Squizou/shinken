@@ -310,6 +310,9 @@ class Arbiter(Daemon):
         ### Resume standard operations ###
         self.conf.create_objects(raw_objects)
 
+        # Maybe, we can already disable invalid objects
+        self.conf.disable_invalid_objects()
+
         # Maybe conf is already invalid
         if not self.conf.conf_is_correct:
             sys.exit("***> One or more problems was encountered while processing the config files...")
@@ -395,6 +398,9 @@ class Arbiter(Daemon):
 
         # Manage all post-conf modules
         self.hook_point('late_configuration')
+
+        # Disable invalid objects
+        self.conf.disable_invalid_objects()
 
         # Correct conf?
         self.conf.is_correct()

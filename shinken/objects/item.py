@@ -786,7 +786,11 @@ class Items(object):
             if not i.is_correct():
                 n = getattr(i, 'imported_from', "unknown source")
                 logger.error("[items] In %s is incorrect ; from %s" % (i.get_name(), n))
-                r = False
+
+                # if it not is a disabled host, global configuration is changed to false
+                import shinken.objects.host
+                if not (isinstance(self, shinken.objects.host.Hosts) and i.is_disabled):
+                    r = False
 
         return r
 

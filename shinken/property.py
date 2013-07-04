@@ -58,7 +58,7 @@ class Property(object):
                  fill_brok=None, conf_send_preparation=None,
                  brok_transformation=None, retention=False,
                  retention_preparation=None, to_send=False,
-                 override=False, managed=True):
+                 override=False, managed=True, editable_when_object_disabled=True):
 
         """
         `default`: default value to be used if this property is not set.
@@ -96,6 +96,9 @@ class Property(object):
 
         managed: property that is managed in Nagios but not in Shinken
 
+        editable_when_object_disabled : if false, property can't be edited if object 
+                                        is disabled
+
         """
 
         self.default = default
@@ -114,6 +117,7 @@ class Property(object):
         self.override = override
         self.managed = managed
         self.unused = False
+        self.editable_when_object_disabled = editable_when_object_disabled
 
 
 class UnusedProp(Property):

@@ -65,6 +65,10 @@ class Host(SchedulingItem):
     #  the major times it will be to flatten the data (like realm_name instead of the realm object).
     properties = SchedulingItem.properties.copy()
     properties.update({
+        # To allow disabling
+        'is_disabled': BoolProp(default=False, editable_when_object_disabled=False),
+        'conf_is_correct': BoolProp(default=True, editable_when_object_disabled=False),
+
         'host_name':            StringProp(fill_brok=['full_status', 'check_result', 'next_schedule']),
         'alias':                StringProp(fill_brok=['full_status']),
         'display_name':         StringProp(default='', fill_brok=['full_status']),
@@ -76,8 +80,8 @@ class Host(SchedulingItem):
         'max_check_attempts':   IntegerProp(fill_brok=['full_status']),
         'check_interval':       IntegerProp(default='0', fill_brok=['full_status']),
         'retry_interval':       IntegerProp(default='0', fill_brok=['full_status']),
-        'active_checks_enabled': BoolProp(default='1', fill_brok=['full_status'], retention=True),
-        'passive_checks_enabled': BoolProp(default='1', fill_brok=['full_status'], retention=True),
+        'active_checks_enabled': BoolProp(default='1', fill_brok=['full_status'], retention=True, editable_when_object_disabled=False),
+        'passive_checks_enabled': BoolProp(default='1', fill_brok=['full_status'], retention=True, editable_when_object_disabled=False),
         'check_period':         StringProp(brok_transformation=to_name_if_possible, fill_brok=['full_status']),
         'obsess_over_host':     BoolProp(default='0', fill_brok=['full_status'], retention=True),
         'check_freshness':      BoolProp(default='0', fill_brok=['full_status']),
@@ -89,8 +93,8 @@ class Host(SchedulingItem):
         'flap_detection_enabled': BoolProp(default='1', fill_brok=['full_status'], retention=True),
         'flap_detection_options': ListProp(default='o,d,u', fill_brok=['full_status']),
         'process_perf_data':    BoolProp(default='1', fill_brok=['full_status'], retention=True),
-        'retain_status_information': BoolProp(default='1', fill_brok=['full_status']),
-        'retain_nonstatus_information': BoolProp(default='1', fill_brok=['full_status']),
+        'retain_status_information': BoolProp(default='1', fill_brok=['full_status'], editable_when_object_disabled=False),
+        'retain_nonstatus_information': BoolProp(default='1', fill_brok=['full_status'], editable_when_object_disabled=False),
         'contacts':             StringProp(default='', brok_transformation=to_list_of_names, fill_brok=['full_status']),
         'contact_groups':       StringProp(default='', fill_brok=['full_status']),
         'notification_interval': IntegerProp(default='60', fill_brok=['full_status']),
@@ -155,10 +159,10 @@ class Host(SchedulingItem):
         'in_checking':          BoolProp(default=False, fill_brok=['full_status', 'check_result', 'next_schedule']),
         'latency':              FloatProp(default=0, fill_brok=['full_status', 'check_result'], retention=True),
         'attempt':              IntegerProp(default=0, fill_brok=['full_status', 'check_result'], retention=True),
-        'state':                StringProp(default='PENDING', fill_brok=['full_status', 'check_result'], retention=True),
-        'state_id':             IntegerProp(default=0, fill_brok=['full_status', 'check_result'], retention=True),
-        'state_type':           StringProp(default='HARD', fill_brok=['full_status', 'check_result'], retention=True),
-        'state_type_id':        IntegerProp(default=0, fill_brok=['full_status', 'check_result'], retention=True),
+        'state':                StringProp(default='PENDING', fill_brok=['full_status', 'check_result'], retention=True, editable_when_object_disabled=False),
+        'state_id':             IntegerProp(default=0, fill_brok=['full_status', 'check_result'], retention=True, editable_when_object_disabled=False),
+        'state_type':           StringProp(default='HARD', fill_brok=['full_status', 'check_result'], retention=True, editable_when_object_disabled=False),
+        'state_type_id':        IntegerProp(default=0, fill_brok=['full_status', 'check_result'], retention=True, editable_when_object_disabled=False),
         'current_event_id':     StringProp(default=0, fill_brok=['full_status', 'check_result'], retention=True),
         'last_event_id':        IntegerProp(default=0, fill_brok=['full_status', 'check_result'], retention=True),
         'last_state':           StringProp(default='PENDING', fill_brok=['full_status', 'check_result'], retention=True),
@@ -172,7 +176,7 @@ class Host(SchedulingItem):
         'last_time_down':       IntegerProp(default=0, fill_brok=['full_status', 'check_result'], retention=True),
         'last_time_unreachable': IntegerProp(default=0, fill_brok=['full_status', 'check_result'], retention=True),
         'duration_sec':         IntegerProp(default=0, fill_brok=['full_status'], retention=True),
-        'output':               StringProp(default='', fill_brok=['full_status', 'check_result'], retention=True),
+        'output':               StringProp(default='', fill_brok=['full_status', 'check_result'], retention=True, editable_when_object_disabled=False),
         'long_output':          StringProp(default='', fill_brok=['full_status', 'check_result'], retention=True),
         'is_flapping':          BoolProp(default=False, fill_brok=['full_status'], retention=True),
         'flapping_comment_id':  IntegerProp(default=0, fill_brok=['full_status'], retention=True),
@@ -298,6 +302,7 @@ class Host(SchedulingItem):
 
         # Trigger list
         'triggers':  StringProp(default=[]),
+
     })
 
     # Hosts macros and prop that give the information
@@ -386,9 +391,77 @@ class Host(SchedulingItem):
         if hasattr(self, 'host_name') and not hasattr(self, 'alias'):
             self.alias = self.host_name
 
+
+    # Reject modifications of non "editable_when_object_disabled" attributes
+    # if host is disabled
+    def __setattr__(self, attr, value):
+        # Get properties of the attribute
+        if attr in self.properties:
+            prop = self.properties[attr]
+        elif attr in self.running_properties:
+            prop = self.running_properties[attr]
+        else:
+            prop = None
+
+        # Allow edition only if the host is not disabled or if the property can be edited
+        if (
+                prop is not None
+            and False == prop.editable_when_object_disabled
+            and hasattr(self, 'is_disabled')
+            and self.is_disabled == True
+           ):
+            logger.info("%s: I am disabled, I can't change value of my '%s' attribute" % (self.get_name(), attr))
+        else:
+            super(Host, self).__setattr__(attr, value)
+
+    # Disable a host
+    def disable(self):
+        # We save if the host was correct or not
+        self.conf_is_correct = False # in this first case, we disable only invalid hosts
+
+        # Set status to HARD/DOWN
+        self.set_state_from_exit_status(3)
+#        self.status = 'DOWN'
+#        self.status_type = 'HARD'
+#        self.status_code = 'd'
+
+        # Set an error message
+        self.output = 'Configuration error'
+
+        # Set check_interval to 0 in order to not schedule host
+        self.check_interval = 0
+
+        # Disable active and passive checks
+        self.disable_active_checks()
+        self.passive_checks_enabled = False
+        self.accept_passive_checks = False # TODO check if it is necessary
+        self.execute_checks = False # TODO check if it is necessary
+
+        # Disable retention
+        self.retain_status_information = False
+        self.retain_nonstatus_information = False
+
+        # Remove childs
+        for child in self.childs:
+            child.unregister_parent(self)
+            self.unregister_child(child)
+
+        # The host is disabled
+        self.is_disabled = True
+        # attributes won't be able to be updated.
+        # we become certain that retention will not be restored and external 
+        # commands don't have effects
+
+        logger.info("%s: I am disabled." % (self.get_name()))
+
     # Check is required prop are set:
     # contacts OR contactgroups is need
     def is_correct(self):
+
+        # if the host is disabled, we return the previous value, before disabling
+        if self.is_disabled:
+            return self.conf_is_correct
+
         state = True
         cls = self.__class__
 
@@ -458,7 +531,7 @@ class Host(SchedulingItem):
                 if c in self.host_name:
                     logger.info("%s: My host_name got the character %s that is not allowed." % (self.get_name(), c))
                     state = False
-
+        logger.error("the state is %s" % state)
         return state
 
     # Search in my service if I've got the service
@@ -813,6 +886,17 @@ class Host(SchedulingItem):
         # and another with all data, useful for 'running' part
         self.childs.append(child)
         self.act_depend_of_me.append((child, ['d', 'u', 's', 'f'], 'network_dep', None, True))
+
+    # Unregister a child in our list
+    def unregister_child(self, child):
+        self.childs.remove(child)
+        self.act_depend_of_me.remove((child, ['d', 'u', 's', 'f'], 'network_dep', None, True))
+
+    # Unregister a parent in our list
+    def unregister_parent(self, parent):
+        self.parents.remove(parent)
+        self.act_depend_of.remove((parent, ['d', 'u', 's', 'f'], 'network_dep', None, True))
+        parent.unregister_son_in_parent_child_dependencies(self)
 
     # Give data for checks's macros
     def get_data_for_checks(self):
@@ -1183,3 +1267,10 @@ class Hosts(Items):
     def create_business_rules_dependencies(self):
         for h in self:
             h.create_business_rules_dependencies()
+
+    # Will disable hosts with an invalid configuration
+    def disable(self):
+        for h in self:
+            if not h.is_correct():
+                logger.info("%s: My configuration is invalid. I will be disabled" % (h.get_name()))
+                h.disable()
