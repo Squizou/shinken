@@ -149,6 +149,11 @@ class ShinkenTest(unittest.TestCase):
         self.conf.remove_templates()
         self.conf.compute_hash()
         #print "conf.services has %d elements" % len(self.conf.services)
+
+        # fix invalid attributes by reset them to their default value
+        # must be called before before 'pythonize' function
+        self.conf.fix_invalid_attributes()
+
         self.conf.create_reversed_list()
         self.conf.pythonize()
         self.conf.linkify()
@@ -157,8 +162,10 @@ class ShinkenTest(unittest.TestCase):
         self.conf.propagate_timezone_option()
         self.conf.create_business_rules()
         self.conf.create_business_rules_dependencies()
-        # we disable invalid objects
+
+        # we try to fix objects and then disable them
         self.conf.fix_conf_errors()
+
         self.conf.is_correct()
         if not self.conf.conf_is_correct:
             print "The conf is not correct, I stop here"

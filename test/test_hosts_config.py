@@ -8,7 +8,7 @@ import sys
 # define constants
 HOST_NAME = 0
 HOST_CONF_MUST_BE_CORRECT = 1
-HOST_CHECK_ATTRIBUTES = 2
+HOST_CHECK_ATTRIBUTES_DEFAULT_VALUE = 2
 HOST_MUST_BE_DISABLED = 3
 
 CHECK_HOSTS = 0
@@ -209,18 +209,34 @@ class TestConfig(ShinkenTest):
                                  )
 
 
-    def check_attribute(self, config, host, property, value):
-        """ Check that host attribute "property" is set with the value exepcted
+    def check_attribute_default_value(self, config, host, property):
+        """ Check that host attribute "property" is set with the default value
 
-            Raise an error if the attribute doesn't exist or if the value
-            is not correct
+            Raise an error if
+             - the attribute doesn't exist
+             - the attribute doesn't have a default value
+             - the value is not correct
 
         """
 
         self.assert_(
-                      (hasattr(host, property) and value == host.property)
-                     ,('attribute \'%s\' of the host \'%s\' has not the value \'%s\' (%s)'
-                        % (property, host.host_name, value, config))
+                      hasattr(host,property)
+                     ,('attribute %s doesn\'t exist (%s)'
+                        % (property, config))
+                    )
+
+        self.assert_(
+                      host.__class__.properties[property].has_default
+                     ,('attribute %s doesn\'t have a default value (%s)'
+                        % (property, config))
+                    )
+
+        expected_value = host.__class__.properties[property].default
+        value = getattr(host, property, None)
+
+        self.assert_( value is not None and value == expected_value
+                     ,('attribute \'%s\' of the host \'%s\' has the value \'%s\' which is not \'%s\' (%s)'
+                        % (property, host.host_name, str(value), str(expected_value), config ))
                     )
 
 
@@ -377,18 +393,17 @@ class TestConfig(ShinkenTest):
 
 
                 # we check attributes
-                if(len(hst) > HOST_CHECK_ATTRIBUTES): # if HOST_CHECK_ATTRIBUTES
-                                                      # is not specified,
-                                                      # it is false
+                if(len(hst) > HOST_CHECK_ATTRIBUTES_DEFAULT_VALUE): # if HOST_CHECK_ATTRIBUTES_DEFAULT_VALUE
+                                                                    # is not specified,
+                                                                    # it is false
 
 
-                    for property, value in hst[HOST_CHECK_ATTRIBUTES]:
-                        self.check_attribute(
-                                              config
-                                             ,host
-                                             ,property
-                                             ,value
-                                            )
+                    for property in hst[HOST_CHECK_ATTRIBUTES_DEFAULT_VALUE]:
+                        self.check_attribute_default_value(
+                                                            config
+                                                           ,host
+                                                           ,property
+                                                          )
 
 
                 # if the host must be disabled, we check it
@@ -466,8 +481,8 @@ class TestConfig(ShinkenTest):
               )
              ,(
                 'test_host_2'
-               ,[]
                ,True
+               ,[]
               )
             ]
            ,[
@@ -711,7 +726,7 @@ class TestConfig(ShinkenTest):
               ,HOST_DISABLED
              )
             ]
-           ,['[host::test_host_0] max_check_attempts property not set']
+           ,['max_check_attempts property not set']
           )
         })
 
@@ -734,9 +749,8 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,False
-              ,[]
-              ,HOST_DISABLED
+              ,True
+              ,['check_command']
              )
             ]
            ,['test_host_0: my check_command None is invalid']
@@ -749,12 +763,11 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,False # the is_correct already return false when the error is in a used object
-              ,[]
-              ,HOST_DISABLED
+              ,True # the is_correct already return false when the error is in a used object
+              ,['check_command']
              )
             ]
-           ,['[item::commande] command_line property is missing']
+           ,['command_line property is missing']
           )
         })
 
@@ -780,7 +793,7 @@ class TestConfig(ShinkenTest):
               ,[]
              )
             ]
-           ,['[host::UNNAMEDHOST] host_name property not set']
+           ,['host_name property not set']
           )
 
          # a host without host_name but with an alias
@@ -793,7 +806,7 @@ class TestConfig(ShinkenTest):
               ,[]
              )
             ]
-           ,['host::UNNAMEDHOST] host_name property not set']
+           ,['host_name property not set']
           )
 
          # two hosts without host_name (shinken must generate a unique name
@@ -812,7 +825,7 @@ class TestConfig(ShinkenTest):
                ,[]
               )
             ]
-           ,['host::UNNAMEDHOST] host_name property not set']
+           ,['host_name property not set']
           )
         })
 
@@ -838,8 +851,8 @@ class TestConfig(ShinkenTest):
              )
             ]
            ,[ 
-              '[host::test_host_0] incorrect type for property \'check_interval\' of \'test_host_0\''
-             ,'[host::test_host_0] The check_period of the host \'test_host_0\' named \'invalid\' is unknown!'
+              'incorrect type for property \'check_interval\' of \'test_host_0\''
+             ,'The check_period of the host \'test_host_0\' named \'invalid\' is unknown!'
             ]
           )
         })
@@ -880,7 +893,7 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,False
+              ,True
               ,[]
               ,HOST_DISABLED
              )
@@ -909,9 +922,8 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,False
-              ,[]
-              ,HOST_DISABLED 
+              ,True
+              ,['event_handler']
              )
             ]
            ,['test_host_0: my event_handler None is invalid']
@@ -924,12 +936,11 @@ class TestConfig(ShinkenTest):
             [
              (
                 'test_host_0'
-               ,False # the is_correct already return false when the error is in a used object
-               ,[]
-               ,HOST_DISABLED 
+               ,True # the is_correct already return false when the error is in a used object
+               ,['event_handler']
              )
             ]
-           ,['[item::commande] command_line property is missing']
+           ,['command_line property is missing']
           )
         })
 
@@ -987,8 +998,8 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,False
-              ,[]
+              ,True
+              ,['check_interval']
               ,HOST_MUST_BE_DISABLED
              )
             ]
