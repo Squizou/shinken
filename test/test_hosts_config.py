@@ -8,7 +8,8 @@ import sys
 # define constants
 HOST_NAME = 0
 HOST_CONF_MUST_BE_CORRECT = 1
-HOST_MUST_BE_DISABLED = 2
+HOST_CHECK_ATTRIBUTES = 2
+HOST_MUST_BE_DISABLED = 3
 
 CHECK_HOSTS = 0
 CHECK_LOGS = 1
@@ -16,7 +17,6 @@ CHECK_LOGS = 1
 HOST_NOT_DISABLED = 0
 HOST_DISABLED = 1
 HOST_NOT_IN_LOOP = 2
-
 
 class TestConfig(ShinkenTest):
     # setUp is inherited from ShinkenTest but we don't use it
@@ -209,20 +209,20 @@ class TestConfig(ShinkenTest):
                                  )
 
 
-    def check_non_scheduled_hst(self, config, host):
-        """ Check that the host is not scheduled.
+    def check_attribute(self, config, host, property, value):
+        """ Check that host attribute "property" is set with the value exepcted
 
-            Raise an error if the host is in the list of a scheduler.
+            Raise an error if the attribute doesn't exist or if the value
+            is not correct
 
         """
 
-#        self.assert_(
-#                      # can be incorrect. It is the only way that i have found to 
-#                      # check this (scheduler.py:162/config.py:1720)
-#                      self.sched.hosts.find_by_name(host.host_name) is None
-#                     ,('host \'%s\' seems to be scheduled (%s)'
-#                        % (host.host_name, config))
-#                    )
+        self.assert_(
+                      (hasattr(host, property) and value == host.property)
+                     ,('attribute \'%s\' of the host \'%s\' has not the value \'%s\' (%s)'
+                        % (property, host.host_name, value, config))
+                    )
+
 
     def check_no_child_hst(self, config, host):
         """ Check that no host use the host as parent.
@@ -246,7 +246,6 @@ class TestConfig(ShinkenTest):
             - checks disabled
             - retention disabled
             - commands disabled
-            - not scheduled
             - no other host use this host as parent
            The function raise an error if (at least) one of theses conditions
            is not verified.
@@ -285,12 +284,6 @@ class TestConfig(ShinkenTest):
                                           config
                                          ,host
                                         )
-
-        # check that the host is not scheduled
-        self.check_non_scheduled_hst(
-                                      config
-                                     ,host
-                                    )
 
 
     def check_no_loop_hst(self, config, host):
@@ -382,9 +375,26 @@ class TestConfig(ShinkenTest):
                                       ,hst[HOST_CONF_MUST_BE_CORRECT]
                                      )
 
+
+                # we check attributes
+                if(len(hst) > HOST_CHECK_ATTRIBUTES): # if HOST_CHECK_ATTRIBUTES
+                                                      # is not specified,
+                                                      # it is false
+
+
+                    for property, value in hst[HOST_CHECK_ATTRIBUTES]:
+                        self.check_attribute(
+                                              config
+                                             ,host
+                                             ,property
+                                             ,value
+                                            )
+
+
                 # if the host must be disabled, we check it
-                if(len(hst) > 2): # if HOST_MUST_BE_DISABLED is not specified,
-                                  # it is false
+                if(len(hst) > HOST_MUST_BE_DISABLED): # if HOST_MUST_BE_DISABLED
+                                                      # is not specified,
+                                                      # it is false
 
                     if(HOST_DISABLED == hst[HOST_MUST_BE_DISABLED]):
                         self.check_disabled_hst(
@@ -400,6 +410,7 @@ class TestConfig(ShinkenTest):
 
                     # else (host_not_disabled) : do nothing, we don't check if host 
                     # is enabled
+
 
             # check the logs
             for log in configs[config][CHECK_LOGS]:
@@ -430,6 +441,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,True
+              ,[]
               ,HOST_NOT_IN_LOOP
              )
             ]
@@ -443,15 +455,18 @@ class TestConfig(ShinkenTest):
               (
                 'test_host_0'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_1'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_2'
+               ,[]
                ,True
               )
             ]
@@ -468,26 +483,31 @@ class TestConfig(ShinkenTest):
               (
                 'test_host_0'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_1'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_2'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_3'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_4'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
             ]
@@ -506,26 +526,31 @@ class TestConfig(ShinkenTest):
               (
                 'test_host_0'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_1'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_2'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_3'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_4'
                ,True
+               ,[]
               )
             ]
            ,[
@@ -543,26 +568,31 @@ class TestConfig(ShinkenTest):
               (
                 'test_host_0'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               ) 
              ,(
                 'test_host_1'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_2'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_3'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
              ,(
                 'test_host_4'
                ,True
+               ,[]
                ,HOST_NOT_IN_LOOP
               )
             ]
@@ -592,10 +622,12 @@ class TestConfig(ShinkenTest):
               (
                'test_host_0'
                ,True
+               ,[]
               )
              ,(
                'test_host_0_1'
                ,True
+               ,[]
               )
             ]
            ,['host.test_host_0 is duplicated from etc/hosts_config/host_remove_twins_1/hosts.cfg']
@@ -608,10 +640,12 @@ class TestConfig(ShinkenTest):
               (
                'test_host_0'
                ,False
+               ,[]
               )
              ,(
                'test_host_0_1'
                ,True
+               ,[]
               )
             ]
            ,['host.test_host_0 is duplicated from etc/hosts_config/host_remove_twins_2/hosts.cfg']
@@ -625,15 +659,18 @@ class TestConfig(ShinkenTest):
               (
                'test_host_0'
                ,True
+               ,[]
               )
              ,(
                'test_host_0_1'
                ,False
+               ,[]
                ,HOST_MUST_BE_DISABLED
               )
              ,(
                'test_host_0_2'
                ,True
+               ,[]
               )
             ]
            ,['host.test_host_0 is duplicated from etc/hosts_config/host_remove_twins_3/hosts.cfg']
@@ -656,6 +693,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,False
+              ,[]
               ,HOST_DISABLED
              )
             ]
@@ -669,6 +707,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,False
+              ,[]
               ,HOST_DISABLED
              )
             ]
@@ -696,6 +735,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,False
+              ,[]
               ,HOST_DISABLED
              )
             ]
@@ -710,6 +750,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,False # the is_correct already return false when the error is in a used object
+              ,[]
               ,HOST_DISABLED
              )
             ]
@@ -736,6 +777,7 @@ class TestConfig(ShinkenTest):
              (
                'host_with_no_name_1'
               ,True
+              ,[]
              )
             ]
            ,['[host::UNNAMEDHOST] host_name property not set']
@@ -748,6 +790,7 @@ class TestConfig(ShinkenTest):
              (
                'host_with_no_name_1'
               ,True
+              ,[]
              )
             ]
            ,['host::UNNAMEDHOST] host_name property not set']
@@ -761,10 +804,12 @@ class TestConfig(ShinkenTest):
               (
                 'host_with_no_name_1'
                ,True
+               ,[]
               )
              ,(
                 'host_with_no_name_2'
                ,True
+               ,[]
               )
             ]
            ,['host::UNNAMEDHOST] host_name property not set']
@@ -788,6 +833,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,False
+              ,[]
               ,HOST_DISABLED 
              )
             ]
@@ -811,6 +857,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,False
+              ,[]
               ,HOST_DISABLED
              )
             ]
@@ -834,6 +881,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,False
+              ,[]
               ,HOST_DISABLED
              )
             ]
@@ -862,6 +910,7 @@ class TestConfig(ShinkenTest):
              (
                'test_host_0'
               ,False
+              ,[]
               ,HOST_DISABLED 
              )
             ]
@@ -876,6 +925,7 @@ class TestConfig(ShinkenTest):
              (
                 'test_host_0'
                ,False # the is_correct already return false when the error is in a used object
+               ,[]
                ,HOST_DISABLED 
              )
             ]
@@ -897,39 +947,109 @@ class TestConfig(ShinkenTest):
              (
                '_name_._of_.the__host__'
               ,True
+              ,[]
              )
             ]
            ,['<name>.~of~.the&"host"!: My host_name got characters']
           )
+
+         # a host with an invalid hostname and 
+         # a host with a host_name wich can cause conflict
+         ,'nagios_illegal_objects_name_chars_2.cfg' :
+          (
+            [
+              (
+                '_name_._of_.the__host__'
+               ,True
+               ,[]
+              )
+             ,(
+                '_name_._of_.the__host___1'
+               ,True
+               ,[]
+              )
+            ]
+           ,['<name>.~of~.the&"host"!: My host_name got characters']
+          )
+
         })
 
-    def test_notification(self):
-        """Test an host with notification_enabled but without 
-           notification_interval.
+    def test_invalid_type(self):
+        """Test an host with invalid types for attributes
 
-           The configuration of host must be invalide and the host must
-           be disabled.
+           Test an host with invalid types for attributes
+        """
+
+        self.check_config({
+          # a host with a string for check_interval attribute which exepcted an integer
+          'nagios_invalid_type_1.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,False
+              ,[]
+              ,HOST_MUST_BE_DISABLED
+             )
+            ]
+           ,['In test_host_0 is incorrect ; from etc/hosts_config/host_invalid_type_1/hosts.cfg']
+          )
+        })
+
+    def test_unknow_parent(self):
+        """Test an host with an unknow parent
+
+           The host must not be disabled,
+           The unknow parent must be removed
 
         """
 
         self.check_config({
-          'nagios_notification_1.cfg' :
+          # a host with an unknow parent
+          'nagios_unknow_parent_1.cfg' :
           (
             [
              (
                'test_host_0'
               ,True
-              ,HOST_DISABLED
+              ,[]
              )
             ]
-           ,[
-             # I can't catch message log
-             # I don't have the message :
-             # "%s: I've got no notification_interval but I've got
-             # notifications enabled"
-            ]
+           ,['[items] the parent \'unknow_parent\' on host \'test_host_0\' is unknown!']
           )
         })
+
+
+#    def test_notification(self):
+#        """Test an host with notification_enabled but without 
+#           notification_interval.
+#
+#           The configuration of host must be invalide and the host must
+#           be disabled.
+#
+#           We can't test this, because notification_interval has a default value
+#           equals to "60"
+#
+#        """
+#
+#        self.check_config({
+#          'nagios_notification_1.cfg' :
+#          (
+#            [
+#             (
+#               'test_host_0'
+#              ,True
+#              ,HOST_DISABLED
+#             )
+#            ]
+#           ,[
+#             # I can't catch message log
+#             # I don't have the message :
+#             # "%s: I've got no notification_interval but I've got
+#             # notifications enabled"
+#            ]
+#          )
+#        })
 
 if '__main__' == __name__:
     unittest.main()
