@@ -927,16 +927,20 @@ class Config(Item):
         #self.contacts.remove_twins()
         #self.timeperiods.remove_twins()
 
+    # Fix objects invalid attributes by reset them to their default value
+    # Must be called before before 'pythonize' function
+    def fix_invalid_attributes(self):
+        self.hosts.fix_invalid_attributes()
+
+    # Fix configuration errors in order to avoid "I am bail out"
     # Disable elements with an invalid configuration
-    # Only hosts are concerned
     def fix_conf_errors(self):
         pollers_tag = set()
-
         for p in self.pollers:
             for t in p.poller_tags:
                 pollers_tag.add(t)
 
-        self.hosts.fix_conf_errors(pollers_tag)
+        self.hosts.fix_conf_errors(pollers_tag, self.timeperiods, self.commands, self.contacts, self.realms, self.resultmodulations, self.businessimpactmodulations, self.escalations, self.hostgroups, self.triggers, self.checkmodulations, self.macromodulations)
 
     # Dependencies are important for scheduling
     # This function create dependencies linked between elements.

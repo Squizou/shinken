@@ -895,7 +895,6 @@ class TestConfig(ShinkenTest):
                'test_host_0'
               ,True
               ,[]
-              ,HOST_DISABLED
              )
             ]
            ,[]

@@ -66,7 +66,7 @@ class Host(SchedulingItem):
     properties = SchedulingItem.properties.copy()
     properties.update({
         # To allow disabling
-        'is_disabled': BoolProp(default=False, editable_when_object_disabled=False),
+        'is_disabled':          BoolProp(default=False, editable_when_object_disabled=False),
 
         'host_name':            StringProp(fill_brok=['full_status', 'check_result', 'next_schedule']),
         'alias':                StringProp(fill_brok=['full_status']),
@@ -402,14 +402,93 @@ class Host(SchedulingItem):
         else:
             return None
 
+    # Set default value to attributes which have an invalid value
+    # (only if the attribute has a default value)
+    # We can only fix attributes with a bad type.
+    # The attributes which are not set will be set by fill_default()
+    # The goal is to avoid to block on "pythonize" function because after is_correct
+    # always returns false
+    def fix_invalid_attributes(self):
+        for prop, tab in self.__class__.properties.items():
+            # we keep only attributes which have a default value
+            if tab.has_default:
+                try:
+                    # we try to "pythonize" attribute. If we have an error, we reset attribute to its default value
+                    tab.pythonize(getattr(self, prop))
+                except AttributeError, exp:
+                    pass
+                except KeyError, exp:
+                    pass
+                except ValueError, exp:
+                    logger.error("incorrect type for property '%s' of '%s'. Reset to '%s'" % (prop, self.get_name(), tab.default))
+                    setattr(self, prop, tab.default)
+
+    # Check the pointers and change pointer to the default object if the
+    # pointed object is invalid
+    def fix_invalid_pointers(self, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
+        for prop, tab in self.__class__.properties.items():
+            # we keep only attributes which have a default value
+            if tab.has_default:
+
+                #  the value of the property
+                value = getattr(self, prop, None)
+
+
+                import shinken.commandcall
+                import shinken.objects.item
+
+                # If the property is a command
+                if isinstance(value, shinken.commandcall.CommandCall):
+                    if not value.is_valid():
+                        # we raise an error
+                        logger.info("%s: my check_command %s is invalid" % (self.get_name(), self.check_command.command))
+
+                        # we can build a command call
+                        #! TODO: write code for poller_tag and reactionner_tag
+                        cmdCall = shinken.commandcall.CommandCall(commands, tab.default)
+                        setattr(self, prop, cmdCall)
+
+                # If the property is a item
+                elif isinstance(value, shinken.objects.item.Item):
+                    if not value.is_correct():
+
+                        # detect the type of the attribute
+                        # there are too many tests
+                        if value in timeperiods:
+                            list = timeperiods
+                        elif value in contacts:
+                            list = contacts
+                        elif value in realms:
+                            list = realms
+                        elif value in resultmodulations:
+                            list = resultmodulations
+                        elif value in businessimpactmodulations:
+                            list = businessimpactmodulations
+                        elif value in escalations:
+                            list = escalations
+                        elif value in hostgroups:
+                            list = hostgroups
+                        elif value in triggers:
+                            list = triggers
+                        elif value in checkmodulations:
+                            list = checkmodulations
+                        elif value in macromodulations:
+                            list = macromodulations
+
+                        # We set the default value
+                        default_value = list.find_by_name(tab.default)
+                        # What do you do if not found ?
+                        if default_value is not None:
+                            setattr(self, prop, default_value)
+
     # Reject modifications of non "editable_when_object_disabled" attributes
     # if host is disabled
     def __setattr__(self, attr, value):
         # Get properties of the attribute
-        if attr in self.properties:
-            prop = self.properties[attr]
-        elif attr in self.running_properties:
-            prop = self.running_properties[attr]
+        if attr in self.__class__.properties:
+            prop = self.__class__.properties[attr]
+        elif attr in self.__class__.running_properties:
+            prop = self.__class__.running_properties[attr]
         else:
             prop = None
 
@@ -468,6 +547,11 @@ class Host(SchedulingItem):
 
         # if the host is disabled, it is normally because it has a configuration error
         if self.is_disabled:
+            # print logs
+            for err in self.configuration_errors:
+                logger.error("[host::%s] %s" % (self.get_name(), err))
+            for warn in self.configuration_warnings:
+                logger.warning("[host::%s] %s" % (self.get_name(), warn))
             return False
 
         state = True
@@ -1344,9 +1428,9 @@ class Hosts(Items):
         # Set alias and address properties with hostname if there are not defined
         host.fill_predictive_missing_parameters()
 
-
     # Fix configuration errors in order to avoid "I am bail out"
-    def fix_conf_errors(self, pollers_tag):
+    def fix_conf_errors(self, pollers_tag, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
+
 
         # We rename hosts wich have a host_name already used
         for id in self.twins:
@@ -1355,11 +1439,9 @@ class Hosts(Items):
                     (i.__class__.my_type, i.get_name(), getattr(i, 'imported_from', "unknown source")))
             self.create_host_name(i, i.get_name())
 
-
         # We recreate the reversed list because host_name have been changed
         # We may not be able to do this now
         self.create_reversed_list()
-
 
         for h in self:
 
@@ -1381,11 +1463,9 @@ class Hosts(Items):
                 # "hostname_without_illegals_characters"
                 self.create_host_name(h, hostname_without_illegals_characters, try_without_suffix=True)
 
-            # Will remove invalid parents
-            #! TODO
+            # Will fix invalid pointers
+            h.fix_invalid_pointers(timeperiods, commands, contacts, realms, resultmodulations, businessimpactmodulations, escalations, hostgroups, triggers, checkmodulations, macromodulations)
 
-            # Will set invalid attributes to a default value
-            #! TODO
 
             # Will disable hosts with an invalid configuration
             if not h.is_correct():
@@ -1402,3 +1482,9 @@ class Hosts(Items):
 
         # Will remove parents of hosts in loop to delete it
         self.remove_loop_in_parents()
+
+
+    # Fix invalid hosts attributes by reset them to their default value
+    def fix_invalid_attributes(self):
+        for h in self:
+            h.fix_invalid_attributes()
