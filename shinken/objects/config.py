@@ -930,7 +930,13 @@ class Config(Item):
     # Disable elements with an invalid configuration
     # Only hosts are concerned
     def fix_conf_errors(self):
-        self.hosts.fix_conf_errors()
+        pollers_tag = set()
+
+        for p in self.pollers:
+            for t in p.poller_tags:
+                pollers_tag.add(t)
+
+        self.hosts.fix_conf_errors(pollers_tag)
 
     # Dependencies are important for scheduling
     # This function create dependencies linked between elements.
@@ -1403,7 +1409,7 @@ class Config(Item):
             for tag in hosts_tag.difference(pollers_tag):
                 logger.error("Hosts exist with poller_tag %s but no poller got this tag" % tag)
                 self.add_error("Error: hosts exist with poller_tag %s but no poller got this tag" % tag)
-                r = False
+#                r = False
         if not services_tag.issubset(pollers_tag):
             for tag in services_tag.difference(pollers_tag):        
                 logger.error("Services exist with poller_tag %s but no poller got this tag" % tag)

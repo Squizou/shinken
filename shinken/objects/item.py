@@ -762,7 +762,10 @@ class Items(object):
                 i = self.items[id]
                 logger.error("[items] %s.%s is duplicated from %s" %\
                     (i.__class__.my_type, i.get_name(), getattr(i, 'imported_from', "unknown source")))
-                r = False
+
+                # if it is a host, the problem will be fixed later
+                if not i.__class__.my_type == 'host':
+                    r = False
 
         # Then look if we have some errors in the conf
         # Juts print warnings, but raise errors
@@ -787,8 +790,14 @@ class Items(object):
                 n = getattr(i, 'imported_from', "unknown source")
                 logger.error("[items] In %s is incorrect ; from %s" % (i.get_name(), n))
 
-                # if it not is a disabled host, global configuration is changed to false
-                if not (i.__class__.my_type == 'host' and i.is_disabled):
+                # if it not is a disabled host,
+                # or a command (because shinken will stop if a host use an invalid
+                # command)
+                # global configuration is changed to false
+                if(
+                    not (i.__class__.my_type == 'host' and i.is_disabled) and
+                    not (i.__class__.my_type == 'command')
+                  ):
                     r = False
 
         return r

@@ -67,8 +67,6 @@ class Host(SchedulingItem):
     properties.update({
         # To allow disabling
         'is_disabled': BoolProp(default=False, editable_when_object_disabled=False),
-        'conf_is_correct': BoolProp(default=True, editable_when_object_disabled=False),
-        'conf_is_correct_override': BoolProp(default=False, editable_when_object_disabled=False),
 
         'host_name':            StringProp(fill_brok=['full_status', 'check_result', 'next_schedule']),
         'alias':                StringProp(fill_brok=['full_status']),
@@ -392,6 +390,17 @@ class Host(SchedulingItem):
         if hasattr(self, 'host_name') and not hasattr(self, 'alias'):
             self.alias = self.host_name
 
+    # Return the host_name with the character "char" instead of the illegals chars
+    def hostname_without_illegals_characters(self, char):
+        if hasattr(self, 'host_name'):
+            res = self.host_name
+            cls = self.__class__
+            for c in cls.illegal_object_name_chars:
+                if c in res:
+                    res = res.replace(c, char)
+            return res
+        else:
+            return None
 
     # Reject modifications of non "editable_when_object_disabled" attributes
     # if host is disabled
@@ -417,8 +426,6 @@ class Host(SchedulingItem):
 
     # Disable a host
     def disable(self):
-        # We save if the host was correct or not
-        self.override_is_correct(False) # in this first case, we disable only invalid hosts
 
         # Set status to HARD/DOWN
         self.set_state_from_exit_status(3)
@@ -455,19 +462,13 @@ class Host(SchedulingItem):
 
         logger.info("%s: I am disabled." % (self.get_name()))
 
-    # Override is_correct in order not to change the return of
-    # is_correct() function when host is disabled
-    def override_is_correct(self, correct):
-        self.conf_is_correct_override = True
-        self.conf_is_correct = correct
-
     # Check is required prop are set:
     # contacts OR contactgroups is need
     def is_correct(self):
 
-        # if the configuration is override, we return this value
-        if self.conf_is_correct_override:
-            return self.conf_is_correct
+        # if the host is disabled, it is normally because it has a configuration error
+        if self.is_disabled:
+            return False
 
         state = True
         cls = self.__class__
@@ -538,7 +539,7 @@ class Host(SchedulingItem):
                 if c in self.host_name:
                     logger.info("%s: My host_name got the character %s that is not allowed." % (self.get_name(), c))
                     state = False
-        logger.error("the state is %s" % state)
+
         return state
 
     # Search in my service if I've got the service
@@ -1239,9 +1240,6 @@ class Hosts(Items):
 
         # While there is a loop
         while 0 != len(host_in_loops):
-            logger.info("loop")
-            for h in host_in_loops:
-                logger.info(h.get_name())
 
             # Will remove parents of the firt host in the loop
             # We remove only parents which are in the loop
@@ -1309,13 +1307,14 @@ class Hosts(Items):
         for h in self:
             h.create_business_rules_dependencies()
 
-    # Set a default host_name to the host
-    def create_default_host_name(self, host):
-        name_pattern = 'host_with_no_name_'
-        num = 1
+    # Set a non used host_name to the host
+    # The host_name is composed of "name_pattern", then a "separator" and a number
+    # If "try_without_suffix" is set to true, the host_name should be only
+    # "name_pattern" if there is no hosts which use it
+    def create_host_name(self, host, name_pattern='host_with_no_name', separator='_', try_without_suffix=False):
 
-        # We raise an error
-        logger.error("[host::%s] host_name property not set" % (host.get_name()))
+        # First num for suffix
+        num = 1
 
         # We build a list of host_names
         list_host_names = []
@@ -1324,27 +1323,82 @@ class Hosts(Items):
                 list_host_names.append(h.host_name)
 
         # We search a free name
-        while (name_pattern+str(num)) in list_host_names:
-            num = num + 1
+        if try_without_suffix and not name_pattern in list_host_names:
+
+            new_host_name = name_pattern
+
+        else:
+            # As we add a number, we add a separator after the name_pattern
+            name_pattern = name_pattern+separator
+
+            # Search a non used host_name
+            while (name_pattern+str(num)) in list_host_names:
+                num = num + 1
+
+            new_host_name = (name_pattern+str(num))
 
         # We set the host_name
-        logger.info("Set host_name '%s' to '%s'" % ((name_pattern+str(num)), host.get_name()) )
-        host.host_name = (name_pattern+str(num))
+        logger.info("Set host_name of '%s' to '%s'" % (host.get_name(), new_host_name) )
+        host.host_name = new_host_name
 
-        # We save that the configuration of host is invalid
-        host.override_is_correct(False)
+        # Set alias and address properties with hostname if there are not defined
+        host.fill_predictive_missing_parameters()
+
 
     # Fix configuration errors in order to avoid "I am bail out"
-    def fix_conf_errors(self):
+    def fix_conf_errors(self, pollers_tag):
+
+        # We rename hosts wich have a host_name already used
+        for id in self.twins:
+            i = self.items[id]
+            logger.error("[items] %s.%s is duplicated from %s" %\
+                    (i.__class__.my_type, i.get_name(), getattr(i, 'imported_from', "unknown source")))
+            self.create_host_name(i, i.get_name())
+
+
+        # We recreate the reversed list because host_name have been changed
+        # We may not be able to do this now
+        self.create_reversed_list()
+
+
         for h in self:
+
             # Will set a name to hosts with no host_name
             if not hasattr(h, 'host_name'):
-                self.create_default_host_name(h)
+                # We raise an error
+                logger.error("[host::%s] host_name property not set" % (h.get_name()))
+                # We set a default hostname
+                self.create_host_name(h)
+
+            # Replace illegal characters in host_name
+            # We get the hostname with illegals characters replaced by '_'
+            hostname_without_illegals_characters = h.hostname_without_illegals_characters('_')
+            if hostname_without_illegals_characters != h.host_name:
+                # We raise an error
+                logger.info("%s: My host_name got characters that are not allowed." % (h.get_name()))
+                # We set the new host_name in adding a number if there was already
+                # an host with an host_name equals to
+                # "hostname_without_illegals_characters"
+                self.create_host_name(h, hostname_without_illegals_characters, try_without_suffix=True)
+
+            # Will remove invalid parents
+            #! TODO
+
+            # Will set invalid attributes to a default value
+            #! TODO
 
             # Will disable hosts with an invalid configuration
             if not h.is_correct():
                 logger.info("%s: My configuration is invalid. I will be disabled" % (h.get_name()))
                 h.disable()
+
+            # Will disable hosts whith an invalid poller tag
+            if not h.poller_tag in pollers_tag:
+                logger.info("%s: No poller got my poller tag %s. I will be disabled" % (h.get_name(), h.poller_tag))
+                h.disable()
+
+        # We recreate the reversed list again
+        self.create_reversed_list()
 
         # Will remove parents of hosts in loop to delete it
         self.remove_loop_in_parents()
