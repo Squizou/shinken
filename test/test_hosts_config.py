@@ -4,6 +4,8 @@ from cStringIO import StringIO
 from collections import namedtuple
 import time
 import sys
+import shinken.commandcall
+import shinken.objects.item
 
 # define constants
 HOST_NAME = 0
@@ -234,8 +236,6 @@ class TestConfig(ShinkenTest):
         value = getattr(host, property, None)
         expected_value = host.__class__.properties[property].default
 
-        import shinken.commandcall
-        import shinken.objects.item
         if isinstance(value, shinken.commandcall.CommandCall) or isinstance(value, shinken.objects.item.Item):
             self.assert_( value is not None and value.get_name() == expected_value
                          ,('attribute \'%s\' of the host \'%s\' has the value \'%s\' which is not \'%s\' (%s)'
@@ -249,8 +249,11 @@ class TestConfig(ShinkenTest):
             # We add a if clause for this
             if property == 'check_interval' and expected_value == 0:
                 expected_value = 5
+            # If the expected attribute is '', we wan't a none value
+            if not expected_value:
+                expected_value = None
 
-            self.assert_( value is not None and value == expected_value
+            self.assert_( value == expected_value
                          ,('attribute \'%s\' of the host \'%s\' has the value \'%s\' which is not \'%s\' (%s)'
                             % (property, host.host_name, str(value), str(expected_value), config ))
                         )
@@ -771,7 +774,7 @@ class TestConfig(ShinkenTest):
               ,['check_command']
              )
             ]
-           ,['test_host_0: my check_command None is invalid']
+           ,['test_host_0: my check_command \'None\' is invalid']
           )
 
          # an invalid command and a host which use this command
@@ -807,23 +810,7 @@ class TestConfig(ShinkenTest):
         """
         self.check_config({
          # a host with a check_period which is not a defined timeperiod
-         # 'nagios_check_period_1.cfg' :
-         # (
-         #   [
-         #    (
-         #      'test_host_0'
-         #     ,False
-         #     ,[]
-         #     ,HOST_DISABLED
-         #    )
-         #   ]
-         #  ,[]
-         #  #,['test_host_0: my check_period None is invalid']
-         # )
-
-         # an invalid timperiod and a host which use this
-         # as check_period
-         'nagios_check_period_2.cfg' :
+          'nagios_check_period_1.cfg' :
           (
             [
              (
@@ -833,8 +820,22 @@ class TestConfig(ShinkenTest):
               ,HOST_DISABLED
              )
             ]
-           ,[]
-           #,['command_line property is missing']
+           ,['The check_period of the host \'test_host_0\' named \'an_invalid_timeperiod\' is unknown!']
+          )
+
+         # an invalid timperiod and a host which use this
+         # as check_period
+         ,'nagios_check_period_2.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,False
+              ,[]
+              ,HOST_DISABLED
+             )
+            ]
+           ,['test_host_0: I have a pointer to an invalid object. I will be disabled']
           )
         })
 
@@ -994,7 +995,7 @@ class TestConfig(ShinkenTest):
               ,['event_handler']
              )
             ]
-           ,['test_host_0: my event_handler None is invalid']
+           ,['test_host_0: my event_handler \'_internal_host_up\' is invalid. This attribute will be ignored']
           )
 
          # an invalid command and a host which use this command

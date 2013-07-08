@@ -423,10 +423,13 @@ class Host(SchedulingItem):
                     pass
                 except KeyError, exp:
                     # attribute is missing (made by "fill_default" but we do it also)
+                    logger.error("Attribute '%s' of '%s' is missing. Reset to '%s'"
+                                  % (prop, self.get_name(), tab.default))
                     setattr(self, prop, tab.default)
                 except ValueError, exp:
                     # attribute has an incorrect type
-                    logger.error("incorrect type for property '%s' of '%s'. Reset to '%s'" % (prop, self.get_name(), tab.default))
+                    logger.error("incorrect type for property '%s' of '%s'. Reset to '%s'" 
+                                  % (prop, self.get_name(), tab.default))
                     setattr(self, prop, tab.default)
 
     def has_invalid_pointer(self):
@@ -1386,6 +1389,7 @@ class Hosts(Items):
             new_host_name = name_pattern
 
         else:
+
             # As we add a number, we add a separator after the name_pattern
             name_pattern = name_pattern+separator
 
@@ -1401,6 +1405,7 @@ class Hosts(Items):
 
         # We update the reversed list
         self.update_reversed_list(host)
+
 
     def fix_unknown_parents(self, host):
         """Remove unknown parents
@@ -1456,13 +1461,30 @@ class Hosts(Items):
                 # If the property is a command
                 elif isinstance(value, shinken.commandcall.CommandCall):
                     if not value.is_valid():
-                        # we raise an error
-                        logger.info("%s: my check_command %s is invalid" % (host.get_name(), host.check_command.command))
-
-                        # we can build a command call
-                        #! TODO: write code for poller_tag and reactionner_tag
-                        cmdCall = shinken.commandcall.CommandCall(commands, tab.default)
-                        setattr(host, prop, cmdCall)
+                        # if the default attribute is not empty
+                        if tab.default:
+                            # we get the current commandcall
+                            command_call = getattr(host, prop)
+                            # we get the command name
+                            if command_call.command:
+                                command_name = command_call.command.get_name()
+                            else:
+                                command_name = None
+                            # we raise an error
+                                logger.info("%s: my %s '%s' is invalid. Reset to '%s'" 
+                                             % (host.get_name(), prop
+                                               ,command_name
+                                               ,tab.default))
+                            # We build a command call
+                            #! TODO: write code for poller_tag and reactionner_tag
+                            cmdCall = shinken.commandcall.CommandCall(commands, tab.default)
+                            setattr(host, prop, cmdCall)
+                        else:
+                            # we delete attr
+                            logger.info("%s: my %s '%s' is invalid. This attribute will be ignored" 
+                                         % (host.get_name(), prop
+                                           ,host.check_command.command.get_name()))
+                            setattr(host, prop, None)
 
                 # If the property is a item
                 elif isinstance(value, shinken.objects.item.Item):
@@ -1495,8 +1517,18 @@ class Hosts(Items):
                         default_value = list.find_by_name(tab.default)
                         # What do you do if not found ?
                         #! TODO
-                        if default_value is not None:
+                        if default_value:
+                            logger.info("%s: my %s '%s' is invalid. Reset to '%s'" 
+                                         % (host.get_name(), prop
+                                           ,host.value.get_name()
+                                           ,tab.default))
                             setattr(host, prop, default_value)
+                        else:
+                            logger.info("%s: my %s '%s' is invalid. This attribute will be ignored" 
+                                         % (host.get_name(), prop
+                                           ,value.get_name()))
+                            setattr(host, prop, None)
+
 
 
     def fix_conf_errors(self, pollers_tag, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
