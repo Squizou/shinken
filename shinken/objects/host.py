@@ -418,68 +418,12 @@ class Host(SchedulingItem):
                 except AttributeError, exp:
                     pass
                 except KeyError, exp:
-                    pass
+                    # attribute is missing (made by "fill_default")
+                    setattr(self, prop, tab.default)
                 except ValueError, exp:
+                    # attribute has an incorrect type
                     logger.error("incorrect type for property '%s' of '%s'. Reset to '%s'" % (prop, self.get_name(), tab.default))
                     setattr(self, prop, tab.default)
-
-    # Check the pointers and change pointer to the default object if the
-    # pointed object is invalid
-    def fix_invalid_pointers(self, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
-        for prop, tab in self.__class__.properties.items():
-            # we keep only attributes which have a default value
-            if tab.has_default:
-
-                #  the value of the property
-                value = getattr(self, prop, None)
-
-
-                import shinken.commandcall
-                import shinken.objects.item
-
-                # If the property is a command
-                if isinstance(value, shinken.commandcall.CommandCall):
-                    if not value.is_valid():
-                        # we raise an error
-                        logger.info("%s: my check_command %s is invalid" % (self.get_name(), self.check_command.command))
-
-                        # we can build a command call
-                        #! TODO: write code for poller_tag and reactionner_tag
-                        cmdCall = shinken.commandcall.CommandCall(commands, tab.default)
-                        setattr(self, prop, cmdCall)
-
-                # If the property is a item
-                elif isinstance(value, shinken.objects.item.Item):
-                    if not value.is_correct():
-
-                        # detect the type of the attribute
-                        # there are too many tests
-                        if value in timeperiods:
-                            list = timeperiods
-                        elif value in contacts:
-                            list = contacts
-                        elif value in realms:
-                            list = realms
-                        elif value in resultmodulations:
-                            list = resultmodulations
-                        elif value in businessimpactmodulations:
-                            list = businessimpactmodulations
-                        elif value in escalations:
-                            list = escalations
-                        elif value in hostgroups:
-                            list = hostgroups
-                        elif value in triggers:
-                            list = triggers
-                        elif value in checkmodulations:
-                            list = checkmodulations
-                        elif value in macromodulations:
-                            list = macromodulations
-
-                        # We set the default value
-                        default_value = list.find_by_name(tab.default)
-                        # What do you do if not found ?
-                        if default_value is not None:
-                            setattr(self, prop, default_value)
 
     # Reject modifications of non "editable_when_object_disabled" attributes
     # if host is disabled
@@ -552,6 +496,7 @@ class Host(SchedulingItem):
                 logger.error("[host::%s] %s" % (self.get_name(), err))
             for warn in self.configuration_warnings:
                 logger.warning("[host::%s] %s" % (self.get_name(), warn))
+            # a disabled host is an invalid host !
             return False
 
         state = True
@@ -1336,7 +1281,6 @@ class Hosts(Items):
             # Recheck if there is still a loop
             host_in_loops = self.no_loop_in_parents(True)
 
-
     # Return a list of the host_name of the hosts
     # that got the template with name=tpl_name or inherit from
     # a template that use it
@@ -1428,6 +1372,95 @@ class Hosts(Items):
         # Set alias and address properties with hostname if there are not defined
         host.fill_predictive_missing_parameters()
 
+    # Remove unknown parents
+    # Called before pythonize
+    def fix_unknown_parents(self, host):
+
+        # We get current parents names
+        from shinken.util import strip_and_uniq
+        parents_names = host.parents.split(',')
+        parents_names = strip_and_uniq(parents_names)
+
+        # We prepare a list to put existing parents
+        new_parents = []
+
+        # For each parent
+        for p_name in parents_names:
+            # We search the parent host
+            parent = self.find_by_name(p_name)
+            # If the parent is found
+            if not parent is None:
+                new_parents.append(p_name)
+            else:
+                logger.error("[items] the parent '%s' on host '%s' is unknown!. It will be removed from the list of parents." % (p_name, host.get_name()))
+
+        # We set the new_parents list as parents
+        host.parents = new_parents
+
+
+    # Check the pointers in host attributes and change pointer to the default object 
+    # if the pointed object is invalid
+    def fix_invalid_pointers(self, host, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
+        for prop, tab in host.__class__.properties.items():
+            # we keep only attributes which have a default value
+            if tab.has_default:
+
+                #  the value of the property
+                value = getattr(host, prop, None)
+
+
+                import shinken.commandcall
+                import shinken.objects.item
+                # If the property is unknow
+                if value is None:
+                    logger.info("koin")
+                    print(prop)
+
+                # If the property is a command
+                elif isinstance(value, shinken.commandcall.CommandCall):
+                    if not value.is_valid():
+                        # we raise an error
+                        logger.info("%s: my check_command %s is invalid" % (host.get_name(), host.check_command.command))
+
+                        # we can build a command call
+                        #! TODO: write code for poller_tag and reactionner_tag
+                        cmdCall = shinken.commandcall.CommandCall(commands, tab.default)
+                        setattr(host, prop, cmdCall)
+
+                # If the property is a item
+                elif isinstance(value, shinken.objects.item.Item):
+                    if not value.is_correct():
+
+                        # detect the type of the attribute
+                        # there are too many tests
+                        if value in timeperiods:
+                            list = timeperiods
+                        elif value in contacts:
+                            list = contacts
+                        elif value in realms:
+                            list = realms
+                        elif value in resultmodulations:
+                            list = resultmodulations
+                        elif value in businessimpactmodulations:
+                            list = businessimpactmodulations
+                        elif value in escalations:
+                            list = escalations
+                        elif value in hostgroups:
+                            list = hostgroups
+                        elif value in triggers:
+                            list = triggers
+                        elif value in checkmodulations:
+                            list = checkmodulations
+                        elif value in macromodulations:
+                            list = macromodulations
+
+                        # We set the default value
+                        default_value = list.find_by_name(tab.default)
+                        # What do you do if not found ?
+                        if default_value is not None:
+                            setattr(host, prop, default_value)
+
+
     # Fix configuration errors in order to avoid "I am bail out"
     def fix_conf_errors(self, pollers_tag, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
 
@@ -1464,8 +1497,7 @@ class Hosts(Items):
                 self.create_host_name(h, hostname_without_illegals_characters, try_without_suffix=True)
 
             # Will fix invalid pointers
-            h.fix_invalid_pointers(timeperiods, commands, contacts, realms, resultmodulations, businessimpactmodulations, escalations, hostgroups, triggers, checkmodulations, macromodulations)
-
+            self.fix_invalid_pointers(h, timeperiods, commands, contacts, realms, resultmodulations, businessimpactmodulations, escalations, hostgroups, triggers, checkmodulations, macromodulations)
 
             # Will disable hosts with an invalid configuration
             if not h.is_correct():
@@ -1487,4 +1519,8 @@ class Hosts(Items):
     # Fix invalid hosts attributes by reset them to their default value
     def fix_invalid_attributes(self):
         for h in self:
+            # Reset invalid attributes
             h.fix_invalid_attributes()
+            # Will remove unknow parents
+            self.fix_unknown_parents(h)
+
