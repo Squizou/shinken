@@ -668,6 +668,25 @@ class Items(object):
                 else:
                     self.twins.append(id)
 
+    def update_reversed_list(self, object):
+        """Set the id object in the reversed list and remove it from twins list if 
+           there is in
+           If the object already exist in the reversed_list, it will be added in the 
+           twins list
+
+        """
+
+        name_property = self.__class__.name_property
+        if hasattr(object, name_property):
+            name = getattr(object, name_property)
+            if name not in self.reversed_list:
+                self.reversed_list[name] = object.id
+                if object.id in self.twins:
+                    self.twins.remove(object.id)
+            else:
+                self.twins.append(object.id)
+
+
     def find_id_by_name(self, name):
         if hasattr(self, 'reversed_list'):
             if name in self.reversed_list:
@@ -791,13 +810,13 @@ class Items(object):
                 logger.error("[items] In %s is incorrect ; from %s" % (i.get_name(), n))
 
                 # if it not is a disabled host,
-                # or a command (because shinken will stop if a host use an invalid
-                # command)
+                # or an invalid item used only by hosts !
                 # global configuration is changed to false
                 if(
                     not (i.__class__.my_type == 'host' and i.is_disabled) and
                     not (i.__class__.my_type == 'command')
                   ):
+
                     r = False
 
         return r
@@ -1137,4 +1156,3 @@ class Items(object):
     def explode_trigger_string_into_triggers(self, triggers):
         for i in self:
             i.explode_trigger_string_into_triggers(triggers)
-

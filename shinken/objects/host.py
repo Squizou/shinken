@@ -390,8 +390,8 @@ class Host(SchedulingItem):
         if hasattr(self, 'host_name') and not hasattr(self, 'alias'):
             self.alias = self.host_name
 
-    # Return the host_name with the character "char" instead of the illegals chars
     def hostname_without_illegals_characters(self, char):
+        """ Return the host_name with the character "char" instead of the illegals chars """
         if hasattr(self, 'host_name'):
             res = self.host_name
             cls = self.__class__
@@ -402,13 +402,17 @@ class Host(SchedulingItem):
         else:
             return None
 
-    # Set default value to attributes which have an invalid value
-    # (only if the attribute has a default value)
-    # We can only fix attributes with a bad type.
-    # The attributes which are not set will be set by fill_default()
-    # The goal is to avoid to block on "pythonize" function because after is_correct
-    # always returns false
     def fix_invalid_attributes(self):
+        """Set default value to attributes which have an invalid value
+           (only if the attribute has a default value)
+           We can only fix attributes with a bad type.
+           The attributes which are not set will be set by fill_default()
+           The goal is to avoid to block on "pythonize" function because after is_correct
+           always returns false
+
+        """
+
+
         for prop, tab in self.__class__.properties.items():
             # we keep only attributes which have a default value
             if tab.has_default:
@@ -418,16 +422,36 @@ class Host(SchedulingItem):
                 except AttributeError, exp:
                     pass
                 except KeyError, exp:
-                    # attribute is missing (made by "fill_default")
+                    # attribute is missing (made by "fill_default" but we do it also)
                     setattr(self, prop, tab.default)
                 except ValueError, exp:
                     # attribute has an incorrect type
                     logger.error("incorrect type for property '%s' of '%s'. Reset to '%s'" % (prop, self.get_name(), tab.default))
                     setattr(self, prop, tab.default)
 
-    # Reject modifications of non "editable_when_object_disabled" attributes
-    # if host is disabled
+    def has_invalid_pointer(self):
+        """ Return true if the host has a pointer to an invalid object """
+
+        # For each attribute, we get its value
+        for prop in self.__class__.properties:
+            value = getattr(self, prop, None)
+
+            if value is not None:
+
+                # For each object attribute, we search if there is errors
+                for attr in ('configuration_errors', 'unresolved', 'invalid_entries', 'invalid_cache'):
+                    if hasattr(value, attr) and getattr(value, attr):
+                        return True
+
+        return False
+
+
     def __setattr__(self, attr, value):
+        """Reject modifications of non "editable_when_object_disabled" attributes
+           if host is disabled
+
+        """
+
         # Get properties of the attribute
         if attr in self.__class__.properties:
             prop = self.__class__.properties[attr]
@@ -447,8 +471,14 @@ class Host(SchedulingItem):
         else:
             super(Host, self).__setattr__(attr, value)
 
-    # Disable a host
     def disable(self):
+        """Disable a host
+
+           Change its status to DOWN
+           Disable checks and set check_interval attribute to 0
+           Remove childs to avoid problems with "unreachable"
+
+        """
 
         # Set status to HARD/DOWN
         self.set_state_from_exit_status(3)
@@ -1335,23 +1365,23 @@ class Hosts(Items):
         for h in self:
             h.create_business_rules_dependencies()
 
-    # Set a non used host_name to the host
-    # The host_name is composed of "name_pattern", then a "separator" and a number
-    # If "try_without_suffix" is set to true, the host_name should be only
-    # "name_pattern" if there is no hosts which use it
-    def create_host_name(self, host, name_pattern='host_with_no_name', separator='_', try_without_suffix=False):
+    def create_host_name(self, host, name_pattern='host_with_no_name', 
+                         separator='_', try_without_suffix=False):
+        """Set a non used host_name to the host
+
+           The host_name is composed of "name_pattern", then a "separator" and a number
+           If "try_without_suffix" is set to true, the host_name should be only
+           "name_pattern" if there is no hosts which use it
+
+           The reversed_list must be created before
+
+       """
 
         # First num for suffix
         num = 1
 
-        # We build a list of host_names
-        list_host_names = []
-        for h in self:
-            if hasattr(h, 'host_name') and h.host_name is not None:
-                list_host_names.append(h.host_name)
-
         # We search a free name
-        if try_without_suffix and not name_pattern in list_host_names:
+        if try_without_suffix and not name_pattern in self.reversed_list:
 
             new_host_name = name_pattern
 
@@ -1360,7 +1390,7 @@ class Hosts(Items):
             name_pattern = name_pattern+separator
 
             # Search a non used host_name
-            while (name_pattern+str(num)) in list_host_names:
+            while (name_pattern+str(num)) in self.reversed_list:
                 num = num + 1
 
             new_host_name = (name_pattern+str(num))
@@ -1369,12 +1399,16 @@ class Hosts(Items):
         logger.info("Set host_name of '%s' to '%s'" % (host.get_name(), new_host_name) )
         host.host_name = new_host_name
 
-        # Set alias and address properties with hostname if there are not defined
-        host.fill_predictive_missing_parameters()
+        # We update the reversed list
+        self.update_reversed_list(host)
 
-    # Remove unknown parents
-    # Called before pythonize
     def fix_unknown_parents(self, host):
+        """Remove unknown parents
+
+           Called before pythonize because after, we don't have strings in 
+           attributes
+
+        """
 
         # We get current parents names
         from shinken.util import strip_and_uniq
@@ -1398,9 +1432,14 @@ class Hosts(Items):
         host.parents = new_parents
 
 
-    # Check the pointers in host attributes and change pointer to the default object 
-    # if the pointed object is invalid
     def fix_invalid_pointers(self, host, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
+        """Check the pointers in host attributes
+
+           If the pointer point to an invalid object, change it to the default 
+           object if exist
+
+        """
+
         for prop, tab in host.__class__.properties.items():
             # we keep only attributes which have a default value
             if tab.has_default:
@@ -1413,9 +1452,7 @@ class Hosts(Items):
                 import shinken.objects.item
                 # If the property is unknow
                 if value is None:
-                    logger.info("koin")
-                    print(prop)
-
+                    logger.info("the attribute %s has a none value." % (prop))
                 # If the property is a command
                 elif isinstance(value, shinken.commandcall.CommandCall):
                     if not value.is_valid():
@@ -1457,24 +1494,22 @@ class Hosts(Items):
                         # We set the default value
                         default_value = list.find_by_name(tab.default)
                         # What do you do if not found ?
+                        #! TODO
                         if default_value is not None:
                             setattr(host, prop, default_value)
 
 
-    # Fix configuration errors in order to avoid "I am bail out"
     def fix_conf_errors(self, pollers_tag, timeperiods=None, commands=None, contacts=None, realms=None, resultmodulations=None, businessimpactmodulations=None, escalations=None, hostgroups=None, triggers=None, checkmodulations=None, macromodulations=None):
+        """Fix configuration errors in order to avoid "I bail out" """
 
 
         # We rename hosts wich have a host_name already used
         for id in self.twins:
             i = self.items[id]
             logger.error("[items] %s.%s is duplicated from %s" %\
-                    (i.__class__.my_type, i.get_name(), getattr(i, 'imported_from', "unknown source")))
+                    (i.__class__.my_type, i.get_name(),
+                     getattr(i, 'imported_from', "unknown source")))
             self.create_host_name(i, i.get_name())
-
-        # We recreate the reversed list because host_name have been changed
-        # We may not be able to do this now
-        self.create_reversed_list()
 
         for h in self:
 
@@ -1484,6 +1519,9 @@ class Hosts(Items):
                 logger.error("[host::%s] host_name property not set" % (h.get_name()))
                 # We set a default hostname
                 self.create_host_name(h)
+                # We set a default alias and a default address if not set
+                h.fill_predictive_missing_parameters()
+
 
             # Replace illegal characters in host_name
             # We get the hostname with illegals characters replaced by '_'
@@ -1499,28 +1537,31 @@ class Hosts(Items):
             # Will fix invalid pointers
             self.fix_invalid_pointers(h, timeperiods, commands, contacts, realms, resultmodulations, businessimpactmodulations, escalations, hostgroups, triggers, checkmodulations, macromodulations)
 
-            # Will disable hosts with an invalid configuration
-            if not h.is_correct():
-                logger.info("%s: My configuration is invalid. I will be disabled" % (h.get_name()))
-                h.disable()
-
             # Will disable hosts whith an invalid poller tag
             if not h.poller_tag in pollers_tag:
                 logger.info("%s: No poller got my poller tag %s. I will be disabled" % (h.get_name(), h.poller_tag))
                 h.disable()
 
-        # We recreate the reversed list again
-        self.create_reversed_list()
+            # Will disable hosts with an invalid configuration
+            if not h.is_correct():
+                logger.info("%s: My configuration is invalid. I will be disabled" % (h.get_name()))
+                h.disable()
+
+            # Will disable hosts with an invalid pointer attribute
+            if h.has_invalid_pointer():
+                logger.info("%s: I have a pointer to an invalid object. I will be disabled" % (h.get_name()))
+                h.disable()
 
         # Will remove parents of hosts in loop to delete it
         self.remove_loop_in_parents()
 
 
-    # Fix invalid hosts attributes by reset them to their default value
     def fix_invalid_attributes(self):
+        """ Fix invalid hosts attributes by reset them to their default value """
         for h in self:
             # Reset invalid attributes
             h.fix_invalid_attributes()
             # Will remove unknow parents
             self.fix_unknown_parents(h)
+
 

@@ -515,6 +515,7 @@ class SchedulingItem(Item):
             if cls.my_type == 'service':
                 return None
             else:  # host
+                logger.warning("%s: my check_interval has been increased to %s" % (self.get_name(), 5))
                 self.check_interval = 300 / cls.interval_length
 
         # Interval change is in a HARD state or not

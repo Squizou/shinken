@@ -927,14 +927,16 @@ class Config(Item):
         #self.contacts.remove_twins()
         #self.timeperiods.remove_twins()
 
-    # Fix objects invalid attributes by reset them to their default value
-    # Must be called before before 'pythonize' function
     def fix_invalid_attributes(self):
+        """ Fix objects invalid attributes by reset them to their default value
+            Must be called before before 'pythonize' function
+        """
         self.hosts.fix_invalid_attributes()
 
-    # Fix configuration errors in order to avoid "I am bail out"
-    # Disable elements with an invalid configuration
     def fix_conf_errors(self):
+        """Fix configuration errors in order to avoid "I am bail out"
+           Disable elements with an invalid configuration
+        """
         pollers_tag = set()
         for p in self.pollers:
             for t in p.poller_tags:

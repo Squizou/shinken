@@ -723,11 +723,13 @@ class Timeperiods(Items):
             del tp.rec_tag
 
         # And check all timeperiods for correct (sunday is false)
-        for tp in self:
-            r &= tp.is_correct()
+# If a timeperiod is false, global configuration shouldn't be not correct.
+#!TODO : do better by checking if the timeperiod is used with more different items 
+# than hosts
+#        for tp in self:
+#            r &= tp.is_correct()
 
         return r
-
 
 
 if __name__ == '__main__':

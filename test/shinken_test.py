@@ -150,8 +150,9 @@ class ShinkenTest(unittest.TestCase):
         self.conf.compute_hash()
         #print "conf.services has %d elements" % len(self.conf.services)
 
-        # fix invalid attributes by reset them to their default value
-        # must be called before before 'pythonize' function
+        # fix invalid attributes by reseting them to their default value
+        # must be called before 'pythonize' function, cannot be in fix_conf_errors
+        # because pythonize raise errors on invalid attributes
         self.conf.fix_invalid_attributes()
 
         self.conf.create_reversed_list()
@@ -163,9 +164,10 @@ class ShinkenTest(unittest.TestCase):
         self.conf.create_business_rules()
         self.conf.create_business_rules_dependencies()
 
-        # we try to fix objects and then disable them
+        # we try to fix objects and disable them if something invalid is found
         self.conf.fix_conf_errors()
 
+        # conf won't be correct if some unfixable errors were found
         self.conf.is_correct()
         if not self.conf.conf_is_correct:
             print "The conf is not correct, I stop here"
