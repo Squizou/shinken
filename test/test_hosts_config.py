@@ -1102,6 +1102,34 @@ class TestConfig(ShinkenTest):
         })
 
 
+    def test_invalid_flag(self):
+        """Test an host with an invalid flag in notification_options attribute
+
+           The invalid flags must be ignored and if there is no notification option, 
+           it should be restored to the default value "d,u,r,f"
+
+           ! shinken doesn't see any error when there is a invalid flag !
+           ! invalid flags are automatically ignored
+           ! it will be better if shinken raise a warning
+
+        """
+
+        self.check_config({
+          # a host with an invalid flag for notification options attribute
+          'nagios_invalid_flag_1.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,True
+              ,[]
+             )
+            ]
+           ,[]
+          )
+        })
+
+
 #    def test_notification(self):
 #        """Test an host with notification_enabled but without 
 #           notification_interval.
