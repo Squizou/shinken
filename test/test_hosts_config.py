@@ -231,13 +231,29 @@ class TestConfig(ShinkenTest):
                         % (property, config))
                     )
 
-        expected_value = host.__class__.properties[property].default
         value = getattr(host, property, None)
+        expected_value = host.__class__.properties[property].default
 
-        self.assert_( value is not None and value == expected_value
-                     ,('attribute \'%s\' of the host \'%s\' has the value \'%s\' which is not \'%s\' (%s)'
-                        % (property, host.host_name, str(value), str(expected_value), config ))
-                    )
+        import shinken.commandcall
+        import shinken.objects.item
+        if isinstance(value, shinken.commandcall.CommandCall) or isinstance(value, shinken.objects.item.Item):
+            self.assert_( value is not None and value.get_name() == expected_value
+                         ,('attribute \'%s\' of the host \'%s\' has the value \'%s\' which is not \'%s\' (%s)'
+                            % (property, host.host_name, str(value.get_name()), str(expected_value), config ))
+                        )
+        else:
+            expected_value = host.__class__.properties[property].pythonize(expected_value)
+
+            # "If check_interval is 0, we should not add it for a service
+            # but suppose a 5min sched for hosts" (schedulingitem.py:512)
+            # We add a if clause for this
+            if property == 'check_interval' and expected_value == 0:
+                expected_value = 5
+
+            self.assert_( value is not None and value == expected_value
+                         ,('attribute \'%s\' of the host \'%s\' has the value \'%s\' which is not \'%s\' (%s)'
+                            % (property, host.host_name, str(value), str(expected_value), config ))
+                        )
 
 
     def check_no_child_hst(self, config, host):
@@ -680,7 +696,7 @@ class TestConfig(ShinkenTest):
                'test_host_0_1'
                ,False
                ,[]
-               ,HOST_MUST_BE_DISABLED
+               ,HOST_DISABLED
               )
              ,(
                'test_host_0_2'
@@ -736,10 +752,12 @@ class TestConfig(ShinkenTest):
            There are 2 configurations when the "check_command" attribute
            is incorrect
            The first configuration is the check_command is invalid
-             -> the host configuration is incorrect and the host is disabled
+             -> the host configuration is incorrect and the host is disabled or it
+                takes the default value for this attribute
            The second configuration is the check_command is valid but
            the command is not valid
-             -> the host configuration is correct but the host is disabled
+             -> the host configuration is correct but the host is disabled or it
+                takes the default value for this attribute
 
         """
         self.check_config({
@@ -763,11 +781,60 @@ class TestConfig(ShinkenTest):
             [
              (
                'test_host_0'
-              ,True # the is_correct already return false when the error is in a used object
+              ,True
               ,['check_command']
              )
             ]
            ,['command_line property is missing']
+          )
+        })
+
+    def test_check_period(self):
+        """Test host without check_period or with an invalid check_period
+
+           There are 2 configurations when the "check_period" attribute
+           is incorrect
+           The first configuration is the check_period is invalid
+             -> the host configuration is incorrect and the host is disabled
+           The second configuration is the check_period is valid but
+           the timeperiod is not valid
+             -> the host configuration is correct but the host is disabled
+
+           This test is not a copy of test_check_command because commandcall are 
+           generated with commands in shinken and there is no default value for
+           the check_period attribute
+
+        """
+        self.check_config({
+         # a host with a check_period which is not a defined timeperiod
+         # 'nagios_check_period_1.cfg' :
+         # (
+         #   [
+         #    (
+         #      'test_host_0'
+         #     ,False
+         #     ,[]
+         #     ,HOST_DISABLED
+         #    )
+         #   ]
+         #  ,[]
+         #  #,['test_host_0: my check_period None is invalid']
+         # )
+
+         # an invalid timperiod and a host which use this
+         # as check_period
+         'nagios_check_period_2.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,False
+              ,[]
+              ,HOST_DISABLED
+             )
+            ]
+           ,[]
+           #,['command_line property is missing']
           )
         })
 
@@ -907,10 +974,12 @@ class TestConfig(ShinkenTest):
            There are 2 configurations when the "event_handler" attribute
            is incorrect
            The first configuration is the event_handler is invalid
-             -> the host configuration is incorrect and the host is disabled
+             -> the host configuration is incorrect and the host is disabled or it
+                takes the default value for this attribute
            The second configuration is the event_handler is valid but
            the command is not valid
-             -> the host configuration is correct but the host is disabled
+             -> the host configuration is correct but the host is disabled or it
+                takes the default value for this attribute
 
         """
 
@@ -935,7 +1004,7 @@ class TestConfig(ShinkenTest):
             [
              (
                 'test_host_0'
-               ,True # the is_correct already return false when the error is in a used object
+               ,True
                ,['event_handler']
              )
             ]
@@ -999,10 +1068,12 @@ class TestConfig(ShinkenTest):
                'test_host_0'
               ,True
               ,['check_interval']
-              ,HOST_MUST_BE_DISABLED
              )
             ]
-           ,['In test_host_0 is incorrect ; from etc/hosts_config/host_invalid_type_1/hosts.cfg']
+           ,[
+              'incorrect type for property \'check_interval\' of \'test_host_0\'. Reset to \'0\''
+             ,'test_host_0: my check_interval has been increased to 5'
+            ]
           )
         })
 
