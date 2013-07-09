@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from shinken_test import *
 from cStringIO import StringIO
 from collections import namedtuple
@@ -1020,10 +1022,9 @@ class TestConfig(ShinkenTest):
         """Test an host with an illegal host_name
 
            The host shouldn't be disabled but its name must be changed
-
-       """
+        """
         self.check_config({
-         # a host with a host_name which uses illegal chars
+        # a host with a host_name which uses illegal chars
           'nagios_illegal_objects_name_chars_1.cfg' :
           (
             [
@@ -1045,7 +1046,7 @@ class TestConfig(ShinkenTest):
                 '_name_._of_.the__host__'
                ,True
                ,[]
-              )
+             )
              ,(
                 '_name_._of_.the__host___1'
                ,True
@@ -1054,7 +1055,69 @@ class TestConfig(ShinkenTest):
             ]
            ,['<name>.~of~.the&"host"!: My host_name got characters']
           )
+         # a host with accent in its hostname
+         # the not ascii 7bits characters work with shinken
+         # but shinken doesn't print them on the terminal but the hostname is 
+         # correctly set and we can search the host with the name
+         # it is strange to have illegals chars because utf support seems to be good
+         ,'nagios_illegal_objects_name_chars_3.cfg' :
+          (
+            [
+              (
+                u"_hôte ⁽¹⁾ → ₍₂₎_"
+               ,True
+               ,[]
+              )
+             ,(
+                "_hte   _"
+               ,True
+               ,[]
+              )
+            ]
+           ,[
+              '<hte   ): My host_name got characters that are not allowed.'
+             ,'Set host_name of \'<hte   )\' to \'_hte   _\''
+            ]
+          )
 
+        # try to generate conflict in utf-8 bytes 
+        # We define two hosts with different names
+         ,'nagios_illegal_objects_name_chars_4.cfg' :
+          (
+            [
+              (
+               u'hôte'
+               ,True
+               ,[]
+              )
+             ,(
+               # we must escape the \ character
+               'h\\303\\264te'
+               ,True
+               ,[]
+              )
+            ]
+           ,[]
+          )
+         # a host name written with hiragana
+         # and a second hostname with a not allowed hiragana
+         ,'nagios_illegal_objects_name_chars_5.cfg' :
+          (
+            [
+              (
+               u'おはよう'
+               ,True
+               ,[]
+              )
+             ,(
+               # the character 'す' is not allowed
+               u'おや_み'
+               ,True
+               ,[]
+              )
+            ]
+           ,[]
+          )
         })
 
     def test_invalid_type(self):
@@ -1131,6 +1194,27 @@ class TestConfig(ShinkenTest):
            ,[]
           )
         })
+
+
+#    def test_invalid_configuration(self):
+#        self.check_config({
+#         # an invalid command and a host which use this command
+#         # as check_command
+#         'nagios_invalid_configuration_1.cfg' :
+#          (
+#            [
+#             (
+#               'test_host_0'
+#              ,True
+#              ,['check_command']
+#             )
+#            ]
+#           ,[
+#              'command_line property is missing'
+#             ,'test_host_0: my check_command \'commande\' is invalid. Reset to \'_internal_host_up\''
+#            ]
+#          )
+#        })
 
 
 #    def test_notification(self):
