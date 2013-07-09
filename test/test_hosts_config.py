@@ -788,7 +788,10 @@ class TestConfig(ShinkenTest):
               ,['check_command']
              )
             ]
-           ,['command_line property is missing']
+           ,[
+              'command_line property is missing'
+             ,'test_host_0: my check_command \'commande\' is invalid. Reset to \'_internal_host_up\''
+            ]
           )
         })
 

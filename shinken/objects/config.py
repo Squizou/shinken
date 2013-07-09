@@ -1020,13 +1020,19 @@ class Config(Item):
 
     def fix_invalid_attributes(self):
         """ Fix objects invalid attributes by reset them to their default value
-            Must be called before before 'pythonize' function
+
+            Must be called before before 'pythonize' function because pythonize 
+            raise errors on invalid attributes and after is_correct always returns 
+            false.
+
         """
         self.hosts.fix_invalid_attributes()
 
     def fix_conf_errors(self):
         """Fix configuration errors in order to avoid "I am bail out"
+
            Disable elements with an invalid configuration
+
         """
         pollers_tag = set()
         for p in self.pollers:
@@ -1432,6 +1438,45 @@ class Config(Item):
         #    r &= False
         return r
 
+
+    @classmethod
+    def used_only_by_tolerants_objects(cls, obj):
+        """Return True if an object is used only by host or is not used.
+
+           This function will be deleted when all objects will be tolerants with 
+           configuration errors.
+
+           This is a class method which get instance stored in self.__class__.instance
+
+        """
+
+
+        # we build a dict in order to optimize search
+        if hasattr(cls, 'dict_used_objects'):
+            # the dict is built. We search in
+            return (not obj.id in cls.dict_used_objects)
+        else:
+
+            # we create an empty dict
+            cls.dict_used_objects = {}
+
+            # the list of intolerant items with configuration errors
+            items =  ('hostgroups', 'contacts', 'contactgroups', 'notificationways',
+                      'escalations', 'services', 'servicegroups', 'timeperiods', 'commands',
+                      'hostsextinfo', 'servicesextinfo', 'checkmodulations', 'macromodulations')
+
+            for x in items:
+                # we get the container of items
+                cur = getattr(cls.instance, x)
+
+                # we add the objects used by this intolerant objects with 
+                # configuration errors
+                cur.used_objects(cls.dict_used_objects)
+
+            # the dict is built. We search in
+            return (not obj.id in cls.dict_used_objects)
+
+
     # check if elements are correct or not (fill with defaults, etc)
     # Warning: this function call be called from a Arbiter AND
     # from and scheduler. The first one got everything, the second
@@ -1440,6 +1485,10 @@ class Config(Item):
         """ Check if all elements got a good configuration """
         logger.info('Running pre-flight check on configuration data...')
         r = self.conf_is_correct
+
+        # we keep the instance in a class variable in order to use
+        # "used_only_by_tolerants_objects" function
+        self.__class__.instance = self
 
         # Globally unmanaged parameters
         if self.read_config_silent == 0:

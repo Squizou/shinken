@@ -617,6 +617,31 @@ Like temporary attributes such as "imported_from", etc.. """
         self.triggers = new_triggers
 
 
+    def used_objects(self, dict):
+        """Add in the dict the objects referenced in the attributes of this object
+
+        """
+
+        for properties in ('properties', 'running_properties'):
+
+            # we do a loop on properties and running_properties dict
+            for prop, tab in getattr(self.__class__, properties).items():
+
+                # get the value of the property
+                value = getattr(self, prop, None)
+
+                import shinken.commandcall
+                import shinken.objects.item
+
+                # specifically for commands
+                if isinstance(value, shinken.commandcall.CommandCall):
+                    if value.command is not None:
+                        dict[value.id] = value.command.get_name()
+
+                # the others items
+                elif isinstance(value, shinken.objects.item.Item):
+                    dict[value.id] = value.get_name()
+
 class Items(object):
     def __init__(self, items):
         self.items = {}
@@ -675,7 +700,6 @@ class Items(object):
            twins list
 
         """
-
         name_property = self.__class__.name_property
         if hasattr(object, name_property):
             name = getattr(object, name_property)
@@ -812,11 +836,14 @@ class Items(object):
                 # if it not is a disabled host,
                 # or an invalid item used only by hosts !
                 # global configuration is changed to false
+
+                from shinken.objects.config import Config
                 if(
-                    not (i.__class__.my_type == 'host' and i.is_disabled) and
-                    not (i.__class__.my_type == 'command')
+                    not (i.__class__.my_type == 'host' and i.is_disabled) and 
+                    not Config.used_only_by_tolerants_objects(i)
                   ):
 
+                    logger.info("%s is not only used by tolerant objects with configuration errors" %(i.get_name()))
                     r = False
 
         return r
@@ -1156,3 +1183,16 @@ class Items(object):
     def explode_trigger_string_into_triggers(self, triggers):
         for i in self:
             i.explode_trigger_string_into_triggers(triggers)
+
+
+
+
+    def used_objects(self, dict):
+        """Update the dict by adding the objects of this container
+
+           Passing a dict in argument is to avoid to delete twins or merge many dicts
+
+        """
+        for i in self:
+            i.used_objects(dict)
+

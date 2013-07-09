@@ -326,12 +326,11 @@ class Arbiter(Daemon):
         ### Resume standard operations ###
         self.conf.create_objects(raw_objects)
 
-        # Maybe, we can already disable invalid objects or correct them
-        self.conf.fix_conf_errors()
-
         # Maybe conf is already invalid
-        if not self.conf.conf_is_correct:
-            sys.exit("***> One or more problems was encountered while processing the config files...")
+
+# We can't fix objects before, so we disabled this check
+#        if not self.conf.conf_is_correct:
+#            sys.exit("***> One or more problems was encountered while processing the config files...")
 
         # Change Nagios2 names to Nagios3 ones
         self.conf.old_properties_names_to_new()
@@ -378,6 +377,11 @@ class Arbiter(Daemon):
         # search lists
         self.conf.create_reversed_list()
 
+        # Fix invalid attributes by reseting them to their default value
+        # Must be called before 'pythonize' function, cannot be in fix_conf_errors
+        # because pythonize raise errors on invalid attributes
+        self.conf.fix_invalid_attributes()
+
         # Pythonize values
         self.conf.pythonize()
 
@@ -407,7 +411,6 @@ class Arbiter(Daemon):
         # And link them
         self.conf.create_business_rules_dependencies()
 
-
         # Warn about useless parameters in Shinken
         if self.verify_only:
             self.conf.notice_about_useless_parameters()
@@ -415,7 +418,7 @@ class Arbiter(Daemon):
         # Manage all post-conf modules
         self.hook_point('late_configuration')
 
-        # Disable invalid objects or correct them
+        # we try to fix objects and disable them if something invalid is found
         self.conf.fix_conf_errors()
 
         # Correct conf?

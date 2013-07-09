@@ -433,7 +433,7 @@ class Host(SchedulingItem):
                     setattr(self, prop, tab.default)
 
     def has_invalid_pointer(self):
-        """ Return true if the host has a pointer to an invalid object """
+        """Return true if the host has a pointer to an invalid object """
 
         # For each attribute, we get its value
         for prop in self.__class__.properties:
@@ -1395,7 +1395,7 @@ class Hosts(Items):
 
             # Search a non used host_name
             while (name_pattern+str(num)) in self.reversed_list:
-                num = num + 1
+                num += 1
 
             new_host_name = (name_pattern+str(num))
 
@@ -1445,6 +1445,7 @@ class Hosts(Items):
 
         """
 
+        # perhaps, we should loop on running_properties too
         for prop, tab in host.__class__.properties.items():
             # we keep only attributes which have a default value
             if tab.has_default:
@@ -1455,11 +1456,8 @@ class Hosts(Items):
 
                 import shinken.commandcall
                 import shinken.objects.item
-                # If the property is unknow
-                if value is None:
-                    logger.info("the attribute %s has a none value." % (prop))
                 # If the property is a command
-                elif isinstance(value, shinken.commandcall.CommandCall):
+                if isinstance(value, shinken.commandcall.CommandCall):
                     if not value.is_valid():
                         # if the default attribute is not empty
                         if tab.default:
@@ -1471,10 +1469,10 @@ class Hosts(Items):
                             else:
                                 command_name = None
                             # we raise an error
-                                logger.info("%s: my %s '%s' is invalid. Reset to '%s'" 
-                                             % (host.get_name(), prop
-                                               ,command_name
-                                               ,tab.default))
+                            logger.info("%s: my %s '%s' is invalid. Reset to '%s'" 
+                                         % (host.get_name(), prop
+                                           ,command_name
+                                           ,tab.default))
                             # We build a command call
                             #! TODO: write code for poller_tag and reactionner_tag
                             cmdCall = shinken.commandcall.CommandCall(commands, tab.default)
@@ -1515,8 +1513,8 @@ class Hosts(Items):
 
                         # We set the default value
                         default_value = list.find_by_name(tab.default)
-                        # What do you do if not found ?
-                        #! TODO
+
+                        # If the default value is empty, we remove the attribute
                         if default_value:
                             logger.info("%s: my %s '%s' is invalid. Reset to '%s'" 
                                          % (host.get_name(), prop

@@ -723,11 +723,13 @@ class Timeperiods(Items):
             del tp.rec_tag
 
         # And check all timeperiods for correct (sunday is false)
-# If a timeperiod is false, global configuration shouldn't be not correct.
-#!TODO : do better by checking if the timeperiod is used with more different items 
-# than hosts
-#        for tp in self:
-#            r &= tp.is_correct()
+        for tp in self:
+            if not tp.is_correct():
+                # if the timeperiod is not only used with tolerants objects, the 
+                # conf is not correct
+                from shinken.objects.config import Config
+                if not Config.used_only_by_tolerants_objects(tp):
+                    r = False
 
         return r
 
