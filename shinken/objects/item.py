@@ -90,6 +90,7 @@ class Item(object):
         # [0] = +  -> new key-plus
         # [0] = _  -> new custom entry in UPPER case
         for key in params:
+
             if len(params[key]) >= 1 and params[key][0] == '+':
                 # Special case: a _MACRO can be a plus. so add to plus
                 # but upper the key for the macro name
@@ -101,7 +102,24 @@ class Item(object):
                 custom_name = key.upper()
                 self.customs[custom_name] = params[key]
             else:
-                setattr(self, key, params[key])
+
+                # if the attribute is unknown, we raise a warning
+                if self.unknown_attribute(key):
+                    logger.warning("[%s::%s]: I don't support the '%s' property" 
+                                    %(self.__class__.my_type, self.get_name(), key))
+                else:
+                    # we set the attribute
+                    setattr(self, key, params[key])
+
+    def unknown_attribute(self, attr):
+        """Return true if the attribute is not known in the item properties"""
+        from shinken.objects.config import Config
+        return (
+                 self.__class__.my_type != 'module' and
+                 attr != 'register' and
+                 attr not in self.__class__.properties and
+                 attr not in shinken.objects.config.Config.properties
+               )
 
     def init_running_properties(self):
         for prop, entry in self.__class__.running_properties.items():

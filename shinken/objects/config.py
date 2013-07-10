@@ -385,7 +385,7 @@ class Config(Item):
         for elt in params:
             elts = elt.split('=', 1)
             if len(elts) == 1:  # error, there is no = !
-                self.conf_is_correct = False
+                # self.conf_is_correct = False
                 logger.error("[config] the parameter %s is malformed! (no = sign)" % elts[0])
             else:
                 self.params[elts[0]] = elts[1]
@@ -423,7 +423,7 @@ class Config(Item):
             except IOError, exp:
                 logger.error("[config] cannot open config file '%s' for reading: %s" % (file, exp))
                 # The configuration is invalid because we have a bad file!
-                self.conf_is_correct = False
+                # self.conf_is_correct = False
                 continue
 
             for line in buf:
@@ -452,7 +452,7 @@ class Config(Item):
                     except IOError, exp:
                         logger.error("Cannot open config file '%s' for reading: %s" % (cfg_file_name, exp))
                         # The configuration is invalid because we have a bad file!
-                        self.conf_is_correct = False
+                        # self.conf_is_correct = False
                 elif re.search("^cfg_dir", line):
                     elts = line.split('=', 1)
                     if os.path.isabs(elts[1]):
@@ -462,7 +462,7 @@ class Config(Item):
                     # Ok, look if it's really a directory
                     if not os.path.isdir(cfg_dir_name):
                         logger.error("Cannot open config dir '%s' for reading" % cfg_dir_name)
-                        self.conf_is_correct = False
+                        # self.conf_is_correct = False
 
                     # Look for .pack file into it :)
                     self.packs_dirs.append(cfg_dir_name)
@@ -496,7 +496,7 @@ class Config(Item):
                     # Ok, look if it's really a directory
                     if not os.path.isdir(trig_dir_name):
                         logger.error("Cannot open triggers dir '%s' for reading" % trig_dir_name)
-                        self.conf_is_correct = False
+                        # self.conf_is_correct = False
                         continue
                     # Ok it's a valid one, I keep it
                     self.triggers_dirs.append(trig_dir_name)

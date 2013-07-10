@@ -1137,6 +1137,9 @@ class TestConfig(ShinkenTest):
            ,[]
           )
          # Try to have a ';' in the host_name and test what are the consequnces
+         # The host with a semicolon seems to be not usable in livestatus because we
+         # don't know how the software which use livestatus will interpret the
+         # semicolons
          ,'nagios_illegal_objects_name_chars_7.cfg' :
           (
             [
@@ -1235,6 +1238,52 @@ class TestConfig(ShinkenTest):
            ,[]
           )
         })
+
+    def test_unknown_file(self):
+        """ Try to load a configuration with unknown files
+
+            Shinken must raise an error but doesn't crash
+        """
+
+        self.check_config({
+          # a configuration file which load two cfg_files. One is valid and
+          # the other that is unknown
+          'nagios_unknown_file_1.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,True
+              ,[]
+             )
+            ]
+           ,['Cannot open config file \'etc/hosts_config/host_unknown_file_1/unknown.cfg\' for reading']
+          )
+        })
+
+
+    def test_unknown_properties(self):
+        """Define a host with unknown properties
+
+           Shinken should raise warnings
+
+        """
+
+        self.check_config({
+          # a host with an unknown property
+          'nagios_unknown_property_1.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,True
+              ,[]
+             )
+            ]
+           ,['[host::test_host_0]: I don\'t support the \'invalid_property\' property']
+          )
+        })
+
 
 
 #    def test_invalid_configuration(self):
