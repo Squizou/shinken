@@ -1058,7 +1058,8 @@ class TestConfig(ShinkenTest):
          # a host with accent in its hostname
          # the not ascii 7bits characters work with shinken
          # but shinken doesn't print them on the terminal but the hostname is 
-         # correctly set and we can search the host with the name
+         # correctly set and we can search the host with the name. (in production 
+         # mode, shinken seems to write utf correctly)
          # it is strange to have illegals chars because utf support seems to be good
          ,'nagios_illegal_objects_name_chars_3.cfg' :
           (
@@ -1068,6 +1069,7 @@ class TestConfig(ShinkenTest):
                ,True
                ,[]
               )
+               # this hostname mustn't be in conflict with the previous
              ,(
                 "_hte   _"
                ,True
@@ -1081,7 +1083,8 @@ class TestConfig(ShinkenTest):
           )
 
         # try to generate conflict in utf-8 bytes 
-        # We define two hosts with different names
+        # We define two hosts with different names. "\303\264" is
+        # the character "ô"
          ,'nagios_illegal_objects_name_chars_4.cfg' :
           (
             [
@@ -1118,6 +1121,22 @@ class TestConfig(ShinkenTest):
             ]
            ,[]
           )
+        # A hostname which contains '__ANTI-VIRG__' because in the code, this sequence is replaced by ';'
+         ,'nagios_illegal_objects_name_chars_6.cfg' :
+          (
+            [
+             (
+              # there is a problem because the host matched has not the defined 
+              # hostname. The "__ANTI-VIRG__" sequence was replaced by a semicolon
+              # 'host;0'
+              'host__ANTI-VIRG__0'
+              ,True
+              ,[]
+             )
+            ]
+           ,[]
+          )
+
         })
 
     def test_invalid_type(self):
