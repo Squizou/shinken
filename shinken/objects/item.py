@@ -47,7 +47,8 @@ from shinken.comment import Comment
 from shinken.complexexpression import ComplexExpressionFactory
 from shinken.log import logger
 
-
+import shinken.commandcall
+import shinken.objects.item
 
 class Item(object):
 
@@ -630,9 +631,6 @@ Like temporary attributes such as "imported_from", etc.. """
                 # get the value of the property
                 value = getattr(self, prop, None)
 
-                import shinken.commandcall
-                import shinken.objects.item
-
                 # specifically for commands
                 if isinstance(value, shinken.commandcall.CommandCall):
                     if value.command is not None:
@@ -694,12 +692,18 @@ class Items(object):
                     self.twins.append(id)
 
     def update_reversed_list(self, object):
-        """Set the id object in the reversed list and remove it from twins list if 
-           there is in
-           If the object already exist in the reversed_list, it will be added in the 
-           twins list
+        """Set the id of given object in the reversed list and remove it from twins 
+           list if needed.
 
+           If the object already exists in the reversed_list, it will be added 
+           to the twins list.
         """
+
+        # check that the reversed list and the twins list exist
+        if not (hasattr(self, 'reversed_list') and hasattr(self, 'twins')):
+             logger.debug("update_reversed_list was called but the reversed list doesn't exist")
+             return False
+
         name_property = self.__class__.name_property
         if hasattr(object, name_property):
             name = getattr(object, name_property)
@@ -709,6 +713,11 @@ class Items(object):
                     self.twins.remove(object.id)
             else:
                 self.twins.append(object.id)
+        else:
+            logger.debug("the object doesn't have a name_property attribute")
+            return False
+
+        return True
 
 
     def find_id_by_name(self, name):

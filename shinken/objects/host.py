@@ -42,6 +42,10 @@ from shinken.macroresolver import MacroResolver
 from shinken.eventhandler import EventHandler
 from shinken.log import logger, console_logger
 
+from shinken.util import strip_and_uniq
+from shinken.commandcall import CommandCall
+import shinken.objects.item
+
 
 class Host(SchedulingItem):
     # AutoSlots create the __slots__ with properties and
@@ -1416,7 +1420,6 @@ class Hosts(Items):
         """
 
         # We get current parents names
-        from shinken.util import strip_and_uniq
         parents_names = host.parents.split(',')
         parents_names = strip_and_uniq(parents_names)
 
@@ -1453,9 +1456,6 @@ class Hosts(Items):
                 #  the value of the property
                 value = getattr(host, prop, None)
 
-
-                import shinken.commandcall
-                import shinken.objects.item
                 # If the property is a command
                 if isinstance(value, shinken.commandcall.CommandCall):
                     if not value.is_valid():
