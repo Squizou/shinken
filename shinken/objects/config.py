@@ -70,6 +70,7 @@ from serviceextinfo import ServiceExtInfo, ServicesExtInfo
 from trigger import Trigger, Triggers
 from pack import Pack, Packs
 
+from shinken.util import split_semicolon
 from shinken.arbiterlink import ArbiterLink, ArbiterLinks
 from shinken.schedulerlink import SchedulerLink, SchedulerLinks
 from shinken.reactionnerlink import ReactionnerLink, ReactionnerLinks
@@ -83,7 +84,6 @@ from shinken.daemon import get_cur_user, get_cur_group
 
 no_longer_used_txt = 'This parameter is not longer take from the main file, but must be defined in the status_dat broker module instead. But Shinken will create you one if there are no present and use this parameter in it, so no worry.'
 not_interresting_txt = 'We do not think such an option is interesting to manage.'
-
 
 class Config(Item):
     cache_path = "objects.cache"
@@ -530,11 +530,10 @@ class Config(Item):
             if line.startswith("# IMPORTEDFROM="):
                 filefrom = line.split('=')[1]
                 continue
-            # Protect \; to be considered as comments
-            line = line.replace('\;', '__ANTI-VIRG__')
-            line = line.split(';')[0].strip()
-            # Now we removed real comments, replace them with just ;
-            line = line.replace('__ANTI-VIRG__', ';')
+
+            # Consider all that it is after the first ';' as a comment
+            line = split_semicolon(line)[0].strip()
+
             # A backslash means, there is more to come
             if re.search("\\\s*$", line) is not None:
                 continuation_line = True

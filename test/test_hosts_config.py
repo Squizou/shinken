@@ -1126,10 +1126,22 @@ class TestConfig(ShinkenTest):
           (
             [
              (
-              # there is a problem because the host matched has not the defined 
-              # hostname. The "__ANTI-VIRG__" sequence was replaced by a semicolon
-              # 'host;0'
+              # there was a problem because the host matched has not the defined
+              # hostname. The "__ANTI-VIRG__" sequence was replaced by a semicolon.
+              # So the host had the name "host;0"
               'host__ANTI-VIRG__0'
+              ,True
+              ,[]
+             )
+            ]
+           ,[]
+          )
+         # Try to have a ';' in the host_name and test what are the consequnces
+         ,'nagios_illegal_objects_name_chars_7.cfg' :
+          (
+            [
+             (
+              'host;0'
               ,True
               ,[]
              )
@@ -1138,6 +1150,16 @@ class TestConfig(ShinkenTest):
           )
 
         })
+
+        # send a command to the host with a semicolon in its name
+        self.setup_with_file('etc/hosts_config/nagios_illegal_objects_name_chars_7.cfg')
+        hst = self.get_hst("", "host;0")
+        self.send_command_hst("PROCESS_HOST_CHECK_RESULT;host\;0;2;down")
+        self.assert_(
+                      'DOWN' == hst.state
+                     ,('host \'%s\' has a  state \'%s\' which is not DOWN'
+                        % (hst.host_name, hst.state))
+                    )
 
     def test_invalid_type(self):
         """Test an host with invalid types for attributes
