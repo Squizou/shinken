@@ -47,9 +47,6 @@ from shinken.comment import Comment
 from shinken.complexexpression import ComplexExpressionFactory
 from shinken.log import logger
 
-import shinken.commandcall
-import shinken.objects.item
-
 class Item(object):
 
     properties = {
@@ -131,11 +128,12 @@ class Item(object):
 
         """
 
+        from shinken.objects.config import Config
         return (
                  self.__class__.my_type != 'module' and #!  TODO: find a better way
                  attr != 'register' and
                  attr not in self.__class__.properties and
-                 attr not in shinken.objects.config.Config.properties
+                 attr not in Config.properties
                )
 
     def init_running_properties(self):
@@ -667,12 +665,12 @@ Like temporary attributes such as "imported_from", etc.. """
                 value = getattr(self, prop, None)
 
                 # specifically for commands
-                if isinstance(value, shinken.commandcall.CommandCall):
+                if isinstance(value, CommandCall):
                     if value.command is not None:
                         dict[value.id] = value.command.get_name()
 
                 # the others items
-                elif isinstance(value, shinken.objects.item.Item):
+                elif isinstance(value, Item):
                     dict[value.id] = value.get_name()
 
 class Items(object):

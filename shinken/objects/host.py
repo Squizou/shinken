@@ -411,7 +411,7 @@ class Host(SchedulingItem):
            (only if the attribute has a default value)
            We can only fix attributes with a bad type.
            The attributes which are not set will be set by fill_default()
-           The goal is to avoid to block on "pythonize" function because after is_correct
+           The aim is to avoid to block on "pythonize" function because after is_correct
            always returns false
 
         """
@@ -1479,10 +1479,22 @@ class Hosts(Items):
                                          % (host.get_name(), prop
                                            ,command_call.get_name()
                                            ,tab.default))
+
+
                             # We build a command call
-                            #! TODO: write code for poller_tag and reactionner_tag
-                            cmdCall = shinken.commandcall.CommandCall(commands, tab.default)
+                            if hasattr(self, 'poller_tag'):
+                                cmdCall = CommandCall(commands, tab.default,
+                                                      poller_tag=self.poller_tag)
+                            elif hasattr(self, 'reactionner_tag'):
+                                cmdCall = CommandCall(commands, tab.default,
+                                                      reactionner_tag=self.reactionner_tag)
+                            else:
+                                cmdCall = shinken.commandcall.CommandCall(commands, tab.default)
+
+
                             setattr(host, prop, cmdCall)
+
+
                         else:
                             # we delete attr
                             logger.info("%s: my %s '%s' is invalid. This attribute will be ignored" 
