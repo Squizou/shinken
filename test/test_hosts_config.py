@@ -776,7 +776,7 @@ class TestConfig(ShinkenTest):
               ,['check_command']
              )
             ]
-           ,['test_host_0: my check_command \'None\' is invalid']
+           ,['test_host_0: my check_command \'an_invalid_command\' is invalid']
           )
 
          # an invalid command and a host which use this command
@@ -1286,7 +1286,7 @@ class TestConfig(ShinkenTest):
 
 
     def test_bad_syntax(self):
-        """Check warnings when there is a bad syntax in configuration files"""
+        """!TODO Check warnings when there is a bad syntax in configuration files"""
 
         self.check_config({
          # Two imbricated host definitions
@@ -1359,7 +1359,7 @@ class TestConfig(ShinkenTest):
             ]
           )
          #! TODO
-         # A host with \ and comment in its definition
+         # A host with \ just before a line which begun by a comment in its definition
          ,'nagios_bad_syntax_5.cfg' :
           (
             [
@@ -1371,9 +1371,7 @@ class TestConfig(ShinkenTest):
             ]
            ,[]
           )
-
         })
-
 
 
 
@@ -1383,25 +1381,32 @@ class TestConfig(ShinkenTest):
     # service)
 
 
-#    def test_invalid_configuration(self):
-#        self.check_config({
-#         # an invalid command and a host which use this command
-#         # as check_command
-#         'nagios_invalid_configuration_1.cfg' :
-#          (
-#            [
-#             (
-#               'test_host_0'
-#              ,True
-#              ,['check_command']
-#             )
-#            ]
-#           ,[
-#              'command_line property is missing'
-#             ,'test_host_0: my check_command \'commande\' is invalid. Reset to \'_internal_host_up\''
-#            ]
-#          )
-#        })
+    def test_invalid_configuration(self):
+        """!TODO test what happens when a host and an other invalid object use the 
+                 same invalid object
+
+        """
+
+        self.check_config({
+         # an invalid command and a host which use this command
+         # as check_command
+         # because the service is as a host, a scheduleditem, the service won't be 
+         # scheduled if its configuration is not valid.
+         'nagios_invalid_configuration_1.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,True
+              ,['check_command']
+             )
+            ]
+           ,[
+              'command_line property is missing'
+             ,'test_host_0: my check_command \'commande\' is invalid. Reset to \'_internal_host_up\''
+            ]
+          )
+        })
 
 
 #    def test_notification(self):

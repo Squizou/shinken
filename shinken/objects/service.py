@@ -417,7 +417,7 @@ class Service(SchedulingItem):
 
         # If we got an event handler, it should be valid
         if getattr(self, 'event_handler', None) and not self.event_handler.is_valid():
-            logger.info("%s: my event_handler %s is invalid" % (self.get_name(), self.event_handler.command))
+            logger.info("%s: my event_handler %s is invalid" % (self.get_name(), self.event_handler.get_name()))
             state = False
 
         if not hasattr(self, 'check_command'):
@@ -426,7 +426,7 @@ class Service(SchedulingItem):
         # Ok got a command, but maybe it's invalid
         else:
             if not self.check_command.is_valid():
-                logger.info("%s: my check_command %s is invalid" % (self.get_name(), self.check_command.command))
+                logger.info("%s: my check_command %s is invalid" % (self.get_name(), self.check_command.get_name()))
                 state = False
             if self.got_business_rule:
                 if not self.business_rule.is_valid():

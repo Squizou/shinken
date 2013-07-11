@@ -570,7 +570,7 @@ class Host(SchedulingItem):
             logger.warning("The host %s has no contacts nor contact_groups in (%s)" % (self.get_name(), source))
 
         if getattr(self, 'event_handler', None) and not self.event_handler.is_valid():
-            logger.info("%s: my event_handler %s is invalid" % (self.get_name(), self.event_handler.command))
+            logger.info("%s: my event_handler %s is invalid" % (self.get_name(), self.event_handler.get_name()))
             state = False
 
         if getattr(self, 'check_command', None) is None:
@@ -579,7 +579,7 @@ class Host(SchedulingItem):
         # Ok got a command, but maybe it's invalid
         else:
             if not self.check_command.is_valid():
-                logger.info("%s: my check_command %s is invalid" % (self.get_name(), self.check_command.command))
+                logger.info("%s: my check_command %s is invalid" % (self.get_name(), self.check_command.get_name()))
                 state = False
             if self.got_business_rule:
                 if not self.business_rule.is_valid():
@@ -1483,15 +1483,11 @@ class Hosts(Items):
                         if tab.default:
                             # we get the current commandcall
                             command_call = getattr(host, prop)
-                            # we get the command name
-                            if command_call.command:
-                                command_name = command_call.command.get_name()
-                            else:
-                                command_name = None
+
                             # we raise an error
                             logger.info("%s: my %s '%s' is invalid. Reset to '%s'" 
                                          % (host.get_name(), prop
-                                           ,command_name
+                                           ,command_call.get_name()
                                            ,tab.default))
                             # We build a command call
                             #! TODO: write code for poller_tag and reactionner_tag

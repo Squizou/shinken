@@ -490,6 +490,11 @@ class SchedulingItem(Item):
     # The first scheduling is evenly distributed, so all checks
     # are not launched at the same time.
     def schedule(self, force=False, force_time=None):
+
+        # if the current object is not correct, we don't schedule it
+        if not self.is_correct():
+            return None
+
         # if last_chk == 0 put in a random way so all checks
         # are not in the same time
 
