@@ -1069,7 +1069,7 @@ class TestConfig(ShinkenTest):
                ,True
                ,[]
               )
-               # this hostname mustn't be in conflict with the previous
+               # this hostname mustn't be in conflict with the previous one
              ,(
                 "_hte   _"
                ,True
@@ -1113,7 +1113,7 @@ class TestConfig(ShinkenTest):
                ,[]
               )
              ,(
-               # the character 'す' is not allowed
+               # the character 'す' is not allowed (it has been added manually in the list)
                u'おや_み'
                ,True
                ,[]
@@ -1257,7 +1257,19 @@ class TestConfig(ShinkenTest):
             ]
            ,['Cannot open config file \'etc/hosts_config/host_unknown_file_1/unknown.cfg\' for reading']
           )
-          #TODO: test with an existing file that cannot be open
+          # test with an existing file that cannot be open
+          # the default permissions are incorrect because i must read the file to commit it
+          ,'nagios_unknown_file_2.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,True
+              ,[]
+             )
+            ]
+           ,['Cannot open config file \'etc/hosts_config/host_unknown_file_2/noread.cfg\' for reading']
+          )
         })
 
 
@@ -1281,7 +1293,19 @@ class TestConfig(ShinkenTest):
             ]
            ,['[host::test_host_0]: I don\'t support the \'invalid_property\' property']
           )
-          #TODO: test with a host that use a property of an other object
+          # test with a host that use a property of an other object
+          #! TODO: fix the error with the hostname 
+         ,'nagios_unknown_property_2.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,True
+              ,[]
+             )
+            ]
+           ,['[host::UNNAMEDHOST]: I don\'t support the \'email\' property']
+          )
         })
 
 
@@ -1382,10 +1406,7 @@ class TestConfig(ShinkenTest):
 
 
     def test_invalid_configuration(self):
-        """!TODO test what happens when a host and an other invalid object use the 
-                 same invalid object
-
-        """
+        """Test what happens when a host and an other invalid object use the same invalid object"""
 
         self.check_config({
          # an invalid command and a host which use this command
