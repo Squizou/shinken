@@ -84,7 +84,7 @@ def split_semicolon(line, maxsplit=None):
     splitted_line_size = len(splitted_line)
 
     # if maxsplit is not specified, we set it to the maximum
-    if maxsplit is None:
+    if maxsplit is None or -1 == maxsplit:
         maxsplit = splitted_line_size
 
 

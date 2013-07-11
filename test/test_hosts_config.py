@@ -1188,7 +1188,7 @@ class TestConfig(ShinkenTest):
           )
         })
 
-    def test_unknow_parent(self):
+    def test_unknown_parent(self):
         """Test an host with an unknow parent
 
            The host must not be disabled,
@@ -1198,7 +1198,7 @@ class TestConfig(ShinkenTest):
 
         self.check_config({
           # a host with an unknow parent
-          'nagios_unknow_parent_1.cfg' :
+          'nagios_unknown_parent_1.cfg' :
           (
             [
              (
@@ -1218,9 +1218,7 @@ class TestConfig(ShinkenTest):
            The invalid flags must be ignored and if there is no notification option, 
            it should be restored to the default value "d,u,r,f"
 
-           ! shinken doesn't see any error when there is a invalid flag !
-           ! invalid flags are automatically ignored
-           ! it will be better if shinken raise a warning
+           Shinken must raise a warning if there is an invalid flag
 
         """
 
@@ -1235,7 +1233,7 @@ class TestConfig(ShinkenTest):
               ,[]
              )
             ]
-           ,[]
+           ,['test_host_0: The flag \'z\' in my notification_options attribute is not supported']
           )
         })
 
@@ -1259,6 +1257,7 @@ class TestConfig(ShinkenTest):
             ]
            ,['Cannot open config file \'etc/hosts_config/host_unknown_file_1/unknown.cfg\' for reading']
           )
+          # test with an existing file that cannot be open
         })
 
 
@@ -1282,8 +1281,13 @@ class TestConfig(ShinkenTest):
             ]
            ,['[host::test_host_0]: I don\'t support the \'invalid_property\' property']
           )
+          # test with a host that use a property of an other object
         })
 
+
+    # a host knows its services. We must check that all service are corrects and 
+    # disable the invalid services. (or the contrary, we can do this check in the 
+    # service)
 
 
 #    def test_invalid_configuration(self):

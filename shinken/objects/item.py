@@ -112,10 +112,13 @@ class Item(object):
                     setattr(self, key, params[key])
 
     def unknown_attribute(self, attr):
-        """Return true if the attribute is not known in the item properties"""
-        from shinken.objects.config import Config
+        """Return true if the attribute given is not known in the item 
+           properties
+
+        """
+
         return (
-                 self.__class__.my_type != 'module' and
+                 self.__class__.my_type != 'module' and #!  TODO: find a better way
                  attr != 'register' and
                  attr not in self.__class__.properties and
                  attr not in shinken.objects.config.Config.properties

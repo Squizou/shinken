@@ -436,6 +436,8 @@ class Host(SchedulingItem):
                                   % (prop, self.get_name(), tab.default))
                     setattr(self, prop, tab.default)
 
+
+
     def has_invalid_pointer(self):
         """Return true if the host has a pointer to an invalid object """
 
@@ -525,6 +527,21 @@ class Host(SchedulingItem):
     # Check is required prop are set:
     # contacts OR contactgroups is need
     def is_correct(self):
+
+        # Check that flags are corrects for the "notification_options" attribute
+        if hasattr(self, 'notification_options'):
+            allowed_flags = set(('d', 'u', 'r', 'f', 's', 'n'))
+            # strip blanks before and after the flags
+            flags = [val.strip() for val in self.notification_options]
+            # we determine the difference between the flags which are set and the
+            # allowed flags
+            diff = [val for val in flags if val not in allowed_flags]
+            # If there are not allowed flags
+            if diff:
+                for flag in diff:
+                    logger.warning("%s: The flag '%s' in my notification_options attribute is not supported"
+                                   %(self.get_name(), flag))
+
 
         # if the host is disabled, it is normally because it has a configuration error
         if self.is_disabled:
