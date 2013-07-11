@@ -1304,7 +1304,7 @@ class TestConfig(ShinkenTest):
                ,[]
               )
             ]
-           ,['There is two imbricated objects definition in etc/hosts_config/host_bad_syntax_1/hosts.cfg']
+           ,['There are two imbricated objects definition in etc/hosts_config/host_bad_syntax_1/hosts.cfg']
           )
          # Host definition not cloased
          ,'nagios_bad_syntax_2.cfg' :
@@ -1323,7 +1323,7 @@ class TestConfig(ShinkenTest):
             ]
            ,[]
           )
-          # Host with a duplicate attribute
+         # Host with a duplicate attribute
          ,'nagios_bad_syntax_3.cfg' :
           (
             [
@@ -1334,6 +1334,29 @@ class TestConfig(ShinkenTest):
              )
             ]
            ,['[host]: The property \'address\' is already defined in etc/hosts_config/host_bad_syntax_3/hosts.cfg']
+          )
+         # Two imbricated hosts definition as nagios_bad_syntax_1 but the properties 
+         # are set at the bottom of the file
+         ,'nagios_bad_syntax_4.cfg' :
+          (
+            [
+              (
+                'test_host_0'
+               ,True
+               ,[]
+              )
+# The host "test_host_1" is not found but we have messages in logs
+#             ,(
+#                'test_host_1'
+#               ,True
+#               ,[]
+#              )
+            ]
+           ,[
+              'There are two imbricated objects definition in etc/hosts_config/host_bad_syntax_4/hosts.cfg'
+             ,'[config] the parameter host_name test_host_1 is malformed! (no = sign)'
+             ,'[config] the parameter use generic-host is malformed! (no = sign)'
+            ]
           )
 
         })

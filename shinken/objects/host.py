@@ -528,21 +528,6 @@ class Host(SchedulingItem):
     # contacts OR contactgroups is need
     def is_correct(self):
 
-        # Check that flags are corrects for the "notification_options" attribute
-        if hasattr(self, 'notification_options'):
-            allowed_flags = set(('d', 'u', 'r', 'f', 's', 'n'))
-            # strip blanks before and after the flags
-            flags = [val.strip() for val in self.notification_options]
-            # we determine the difference between the flags which are set and the
-            # allowed flags
-            diff = [val for val in flags if val not in allowed_flags]
-            # If there are not allowed flags
-            if diff:
-                for flag in diff:
-                    logger.warning("%s: The flag '%s' in my notification_options attribute is not supported"
-                                   %(self.get_name(), flag))
-
-
         # if the host is disabled, it is normally because it has a configuration error
         if self.is_disabled:
             # print logs
@@ -622,6 +607,25 @@ class Host(SchedulingItem):
                 if c in self.host_name:
                     logger.info("%s: My host_name got the character %s that is not allowed." % (self.get_name(), c))
                     state = False
+
+        # Check that flags are corrects for the "notification_options" attribute
+        if hasattr(self, 'notification_options'):
+            allowed_flags = set(('d', 'u', 'r', 'f', 's', 'n'))
+
+            # strip blanks before and after the flags
+            flags = [val.strip() for val in self.notification_options]
+
+            # we determine the difference between the flags which are set and the
+            # allowed flags. We keep only the flags which are in the flags list but
+            # are not in the allowed_flags list
+            diff = [val for val in flags if val not in allowed_flags]
+
+            # If there are not allowed flags
+            if diff:
+                for flag in diff:
+                    logger.warning("%s: The flag '%s' in my notification_options attribute is not supported"
+                                   %(self.get_name(), flag))
+
 
         return state
 

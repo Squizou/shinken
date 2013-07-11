@@ -559,7 +559,7 @@ class Config(Item):
 
                 # if we are already in define, we raise a warning
                 if in_define:
-                    logger.warning("There is two imbricated objects definition in %s"%(filefrom))
+                    logger.warning("There are two imbricated objects definition in %s"%(filefrom))
 
                 in_define = True
                 if tmp_type not in objectscfg:
@@ -603,6 +603,8 @@ class Config(Item):
                         value = ' '.join(elts[1:])
 
                         # if the property was already defined, we raise a warning
+                        #! TODO: with timeperiods, it is possible to have more than 
+                        # once "monday"
                         if prop in tmp:
                             logger.warning("[%s]: The property '%s' is already defined in %s"
                                            %(type, prop, tmp['imported_from']))
