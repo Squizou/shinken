@@ -610,21 +610,11 @@ class Host(SchedulingItem):
 
         # Check that flags are corrects for the "notification_options" attribute
         if hasattr(self, 'notification_options'):
-            allowed_flags = set(('d', 'u', 'r', 'f', 's', 'n'))
-
-            # strip blanks before and after the flags
-            flags = [val.strip() for val in self.notification_options]
-
-            # we determine the difference between the flags which are set and the
-            # allowed flags. We keep only the flags which are in the flags list but
-            # are not in the allowed_flags list
-            diff = [val for val in flags if val not in allowed_flags]
-
             # If there are not allowed flags
-            for flag in diff:
+            invalid_flags = self.unauthorized_flags(self.notification_options, set(('d', 'u', 'r', 'f', 's', 'n')))
+            for flag in invalid_flags:
                 logger.warning("%s: The flag '%s' in my notification_options attribute is not supported"
                                %(self.get_name(), flag))
-
 
         return state
 

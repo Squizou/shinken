@@ -111,6 +111,20 @@ class Item(object):
                     # we set the attribute
                     setattr(self, key, params[key])
 
+    def unauthorized_flags(self, flags, allowed_flags):
+        """Return the list of invalid flags
+
+           An invalid flag is a flag which is in the flags list but is not in the allowed_flags list
+        """
+        # strip blanks before and after the flags
+        flags = [val.strip() for val in self.notification_options]
+            
+        # we determine the difference between the flags which are set and the
+        # allowed flags. We keep only the flags which are in the flags list but
+        # are not in the allowed_flags list
+        return [val for val in flags if val not in allowed_flags]
+
+
     def unknown_attribute(self, attr):
         """Return true if the attribute given is not known in the item 
            properties

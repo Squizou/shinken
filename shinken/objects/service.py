@@ -448,6 +448,15 @@ class Service(SchedulingItem):
                 if c in self.service_description:
                     logger.info("%s: My service_description got the character %s that is not allowed." % (self.get_name(), c))
                     state = False
+
+        # Check that flags are corrects for the "notification_options" attribute
+        if hasattr(self, 'notification_options'):
+            # If there are not allowed flags
+            invalid_flags = self.unauthorized_flags(self.notification_options, set(('w', 'u', 'c', 'r', 'f', 'n')))
+            for flag in invalid_flags:
+                logger.warning("%s: The flag '%s' in my notification_options attribute is not supported"
+                               %(self.get_name(), flag))
+
         return state
 
     # The service is dependent of his father dep
