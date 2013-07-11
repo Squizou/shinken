@@ -556,6 +556,11 @@ class Config(Item):
             # A define must be catch and the type save
             # The old entry must be save before
             elif re.search("^define", line) is not None:
+
+                # if we are already in define, we raise a warning
+                if in_define:
+                    logger.warning("There is two imbricated objects definition in %s"%(filefrom))
+
                 in_define = True
                 if tmp_type not in objectscfg:
                     objectscfg[tmp_type] = []
@@ -583,6 +588,7 @@ class Config(Item):
 
         #print "Params", params
         self.load_params(params)
+
         # And then update our MACRO dict
         self.fill_resource_macros_names_macros()
 
@@ -595,6 +601,12 @@ class Config(Item):
                     if elts != []:
                         prop = elts[0]
                         value = ' '.join(elts[1:])
+
+                        # if the property was already defined, we raise a warning
+                        if prop in tmp:
+                            logger.warning("[%s]: The property '%s' is already defined in %s"
+                                           %(type, prop, tmp['imported_from']))
+
                         tmp[prop] = value
                 if tmp != {}:
                     objects[type].append(tmp)

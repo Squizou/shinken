@@ -1257,7 +1257,7 @@ class TestConfig(ShinkenTest):
             ]
            ,['Cannot open config file \'etc/hosts_config/host_unknown_file_1/unknown.cfg\' for reading']
           )
-          # test with an existing file that cannot be open
+          #TODO: test with an existing file that cannot be open
         })
 
 
@@ -1281,8 +1281,65 @@ class TestConfig(ShinkenTest):
             ]
            ,['[host::test_host_0]: I don\'t support the \'invalid_property\' property']
           )
-          # test with a host that use a property of an other object
+          #TODO: test with a host that use a property of an other object
         })
+
+
+    def test_bad_syntax(self):
+        """Check warnings when there is a bad syntax in configuration files"""
+
+        self.check_config({
+         # Two imbricated host definitions
+          'nagios_bad_syntax_1.cfg' :
+          (
+            [
+              (
+                'test_host_0'
+               ,True
+               ,[]
+              )
+             ,(
+                'test_host_1'
+               ,True
+               ,[]
+              )
+            ]
+           ,['There is two imbricated objects definition in etc/hosts_config/host_bad_syntax_1/hosts.cfg']
+          )
+         # Host definition not cloased
+         ,'nagios_bad_syntax_2.cfg' :
+          (
+            [
+              (
+                'test_host_0'
+               ,True
+               ,[]
+              )
+             ,(
+                'test_host_1'
+               ,True
+               ,[]
+              )
+            ]
+           ,[]
+          )
+          # Host with a duplicate attribute
+         ,'nagios_bad_syntax_3.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,True
+              ,[]
+             )
+            ]
+           ,['[host]: The property \'address\' is already defined in etc/hosts_config/host_bad_syntax_3/hosts.cfg']
+          )
+
+        })
+
+
+
 
 
     # a host knows its services. We must check that all service are corrects and 
