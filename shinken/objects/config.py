@@ -603,9 +603,12 @@ class Config(Item):
                         value = ' '.join(elts[1:])
 
                         # if the property was already defined, we raise a warning
-                        #! TODO: with timeperiods, it is possible to have more than 
-                        # once "monday"
-                        if prop in tmp:
+                        # we exclude warnings on timeperiod because it is possible 
+                        # to define many time the prop "monday" : 
+                        #  monday -1 may
+                        #  monday 1 september
+                        # we exclude the "use" property too
+                        if type != 'timeperiod' and prop != 'use' and prop in tmp:
                             logger.warning("[%s]: The property '%s' is already defined in %s"
                                            %(type, prop, tmp['imported_from']))
 

@@ -621,10 +621,9 @@ class Host(SchedulingItem):
             diff = [val for val in flags if val not in allowed_flags]
 
             # If there are not allowed flags
-            if diff:
-                for flag in diff:
-                    logger.warning("%s: The flag '%s' in my notification_options attribute is not supported"
-                                   %(self.get_name(), flag))
+            for flag in diff:
+                logger.warning("%s: The flag '%s' in my notification_options attribute is not supported"
+                               %(self.get_name(), flag))
 
 
         return state

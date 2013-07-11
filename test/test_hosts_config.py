@@ -1358,6 +1358,19 @@ class TestConfig(ShinkenTest):
              ,'[config] the parameter use generic-host is malformed! (no = sign)'
             ]
           )
+         #! TODO
+         # A host with \ and comment in its definition
+         ,'nagios_bad_syntax_5.cfg' :
+          (
+            [
+              (
+                'test_host_0'
+               ,True
+               ,[]
+              )
+            ]
+           ,[]
+          )
 
         })
 
