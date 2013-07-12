@@ -1310,7 +1310,7 @@ class TestConfig(ShinkenTest):
 
 
     def test_bad_syntax(self):
-        """!TODO Check warnings when there is a bad syntax in configuration files"""
+        """Check warnings when there is a bad syntax in configuration files"""
 
         self.check_config({
          # Two imbricated host definitions
@@ -1382,9 +1382,20 @@ class TestConfig(ShinkenTest):
              ,'[config] the parameter use generic-host is malformed! (no = sign)'
             ]
           )
-         #! TODO
          # A host with \ just before a line which begun by a comment in its definition
          ,'nagios_bad_syntax_5.cfg' :
+          (
+            [
+              (
+                'test_host_0'
+               ,True
+               ,[]
+              )
+            ]
+           ,[]
+          )
+         # A file which is terminated by a "\" and the next in an other file
+         ,'nagios_bad_syntax_6.cfg' :
           (
             [
               (
@@ -1448,11 +1459,6 @@ class TestConfig(ShinkenTest):
            ,['There are imbricated objects definition in etc/hosts_config/host_importedfrom_1/hosts.cfg']
           )
         })
-
-
-
-
-
 
 #    def test_notification(self):
 #        """Test an host with notification_enabled but without 

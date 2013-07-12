@@ -534,6 +534,10 @@ class Config(Item):
             # Consider all that it is after the first ';' as a comment
             line = split_semicolon(line)[0].strip()
 
+            # If the line is empty, go to the next line.
+            if not line:
+                continue
+
             # A backslash means, there is more to come
             if re.search("\\\s*$", line) is not None:
                 continuation_line = True
