@@ -1328,7 +1328,7 @@ class TestConfig(ShinkenTest):
                ,[]
               )
             ]
-           ,['There are two imbricated objects definition in etc/hosts_config/host_bad_syntax_1/hosts.cfg']
+           ,['There are imbricated objects definition in etc/hosts_config/host_bad_syntax_1/hosts.cfg']
           )
          # Host definition not cloased
          ,'nagios_bad_syntax_2.cfg' :
@@ -1377,7 +1377,7 @@ class TestConfig(ShinkenTest):
 #              )
             ]
            ,[
-              'There are two imbricated objects definition in etc/hosts_config/host_bad_syntax_4/hosts.cfg'
+              'There are imbricated objects definition in etc/hosts_config/host_bad_syntax_4/hosts.cfg'
              ,'[config] the parameter host_name test_host_1 is malformed! (no = sign)'
              ,'[config] the parameter use generic-host is malformed! (no = sign)'
             ]
@@ -1428,6 +1428,30 @@ class TestConfig(ShinkenTest):
             ]
           )
         })
+
+
+    def test_importedfrom(self):
+        """!TODO Test to inject an "# IMPORTEDFROM" with a bad value"""
+
+        self.check_config({
+         # A configuration file with a line "# IMPORTEDFROM="
+         # We check that shinken print the good filename in the logs
+         'nagios_importedfrom_1.cfg' :
+          (
+            [
+             (
+               'test_host_0'
+              ,True
+              ,[]
+             )
+            ]
+           ,['There are imbricated objects definition in etc/hosts_config/host_importedfrom_1/hosts.cfg']
+          )
+        })
+
+
+
+
 
 
 #    def test_notification(self):

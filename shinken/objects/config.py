@@ -559,7 +559,7 @@ class Config(Item):
 
                 # if we are already in define, we raise a warning
                 if in_define:
-                    logger.warning("There are two imbricated objects definition in %s"%(filefrom))
+                    logger.warning("There are imbricated objects definition in %s"%(filefrom))
 
                 in_define = True
                 if tmp_type not in objectscfg:
