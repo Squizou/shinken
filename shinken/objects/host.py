@@ -1508,6 +1508,7 @@ class Hosts(Items):
 
                         # detect the type of the attribute
                         # there are too many tests
+                        list = None
                         if value in timeperiods:
                             list = timeperiods
                         elif value in contacts:
@@ -1528,6 +1529,10 @@ class Hosts(Items):
                             list = checkmodulations
                         elif value in macromodulations:
                             list = macromodulations
+
+                        # If we don't find the type, we can't set the default value
+                        if list is None:
+                            continue
 
                         # We set the default value
                         default_value = list.find_by_name(tab.default)

@@ -383,7 +383,7 @@ class TestConfig(ShinkenTest):
             # restore stdout and stderr
             sys.stdout, sys.stderr = old_stdout, old_stderr
 
-            # print the stringio (only for debug test cases)
+            # print the stringio (only to debug test cases)
             print(stdout.getvalue())
 
             # the global configuration must always be valid
